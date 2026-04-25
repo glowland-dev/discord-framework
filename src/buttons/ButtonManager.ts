@@ -1,0 +1,114 @@
+import type {
+  ButtonInteraction,
+  Client,
+  InteractionReplyOptions,
+} from "discord.js";
+import {
+  loadDefaultModules,
+  replyToInteractionError,
+  type FrameworkErrorPayload,
+  type MaybePromise,
+} from "../core/index.js";
+import { Button } from "./Button.js";
+
+export interface ButtonManagerOptions<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  client: Client<true>;
+  buttonsPath: string;
+  createContext: (
+    interaction: ButtonInteraction<"cached">,
+  ) => MaybePromise<TContext>;
+  onError?: (
+    payload: FrameworkErrorPayload<
+      Button<TContext>,
+      TContext,
+      ButtonInteraction<"cached">
+    >,
+  ) => MaybePromise<void>;
+  permissionReply?: InteractionReplyOptions | false;
+  errorReply?: InteractionReplyOptions | false;
+  cacheBust?: boolean;
+}
+
+export class ButtonManager<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  private readonly client_: Client<true>;
+  private readonly buttonsPath_: string;
+  private readonly createContext_: ButtonManagerOptions<TContext>["createContext"];
+  private readonly onError_: ButtonManagerOptions<TContext>["onError"];
+  private readonly permissionReply_: InteractionReplyOptions | false;
+  private readonly errorReply_: InteractionReplyOptions | false;
+  private readonly cacheBust_: boolean;
+  private readonly buttonCache_ = new Map<string, Button<TContext>>();
+
+  constructor(options: ButtonManagerOptions<TContext>) {
+    this.client_ = options.client;
+    this.buttonsPath_ = options.buttonsPath;
+    this.createContext_ = options.createContext;
+    this.onError_ = options.onError;
+    this.permissionReply_ = options.permissionReply ?? {
+      flags: "Ephemeral",
+      content: "You don't have permission to use this button.",
+    };
+    this.errorReply_ = options.errorReply ?? {
+      flags: "Ephemeral",
+      content: "An error occurred while executing this button.",
+    };
+    this.cacheBust_ = options.cacheBust ?? true;
+  }
+
+  get buttonCache(): ReadonlyMap<string, Button<TContext>> {
+    return this.buttonCache_;
+  }
+
+  async loadButtons(): Promise<void> {
+    const buttons = await loadDefaultModules<Button<TContext>>({
+      directory: this.buttonsPath_,
+      cacheBust: this.cacheBust_,
+      validate: (value): value is Button<TContext> => value instanceof Button,
+    });
+
+    for (const button of buttons)
+      this.buttonCache_.set(button.customId, button);
+  }
+
+  listen(): void {
+    this.client_.on("interactionCreate", async (interaction) => {
+      if (!interaction.isButton() || !interaction.inCachedGuild()) return;
+
+      const button = this.buttonCache_.get(interaction.customId);
+      if (!button) return;
+
+      if (
+        button.permission &&
+        !interaction.memberPermissions.has(button.permission)
+      ) {
+        if (this.permissionReply_ !== false && interaction.isRepliable()) {
+          await replyToInteractionError(interaction, this.permissionReply_);
+        }
+        return;
+      }
+
+      let context: TContext | undefined;
+
+      try {
+        context = await this.createContext_(interaction);
+        await button.execute(context, interaction);
+      } catch (error) {
+        await this.onError_?.({ error, item: button, context, interaction });
+        if (this.errorReply_ !== false && interaction.isRepliable()) {
+          await replyToInteractionError(interaction, this.errorReply_);
+        }
+      }
+    });
+  }
+
+  async reloadButtons(): Promise<void> {
+    this.buttonCache_.clear();
+    await this.loadButtons();
+  }
+}

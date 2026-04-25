@@ -1,0 +1,64 @@
+{
+  "name": "@glowland/discord-framework",
+  "version": "0.1.0",
+  "description": "Small typed framework for loading and dispatching discord.js modules.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./slash": {
+      "types": "./dist/slash/index.d.ts",
+      "import": "./dist/slash/index.js"
+    },
+    "./buttons": {
+      "types": "./dist/buttons/index.d.ts",
+      "import": "./dist/buttons/index.js"
+    },
+    "./select-menus": {
+      "types": "./dist/select-menus/index.d.ts",
+      "import": "./dist/select-menus/index.js"
+    },
+    "./messages": {
+      "types": "./dist/messages/index.d.ts",
+      "import": "./dist/messages/index.js"
+    },
+    "./events": {
+      "types": "./dist/events/index.d.ts",
+      "import": "./dist/events/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "npm run build"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "discord",
+    "discord.js",
+    "framework",
+    "commands",
+    "components"
+  ],
+  "peerDependencies": {
+    "discord.js": "^14.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "discord.js": "^14.18.0",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
