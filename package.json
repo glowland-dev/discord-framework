@@ -49,8 +49,13 @@
     "discord",
     "discord.js",
     "framework",
-    "commands",
-    "components"
+    "bot",
+    "modular",
+    "typescript",
+    "slash-commands",
+    "events",
+    "components",
+    "hot-reload"
   ],
   "peerDependencies": {
     "discord.js": "^14.18.0"
