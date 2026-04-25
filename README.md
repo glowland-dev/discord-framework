@@ -1,132 +1,157 @@
 # @glowland/discord-framework
 
-Small typed framework for loading and dispatching `discord.js` modules.
+Typed, modular framework for building Discord bots with discord.js.
 
-This package is extracted from Glow's internal handler pattern: file-system driven slash commands, buttons, select menus, messages, and events with app-specific state injected through a generic context.
+Designed around **separation of concerns**, **dynamic module loading**, and **explicit control** over runtime behavior.
 
-## Install
+---
+
+## Features
+
+* Typed abstractions over `discord.js`
+* Modular architecture (commands, components, messages, events)
+* Dynamic file-based loading
+* Built-in reload APIs
+* Minimal assumptions about your app structure
+* Full access to low-level events when needed
+
+---
+
+## Installation
 
 ```bash
-npm install @glowland/discord-framework discord.js
+npm install @glowland/discord-framework
 ```
 
-## Slash commands
+Peer dependency:
 
-```ts
-import path from "node:path";
-import { SlashCommandManager } from "@glowland/discord-framework/slash";
-
-type GlowContext = {
-  client: Bot;
-  guildDB: GuildDB;
-};
-
-const slashCommands = new SlashCommandManager<GlowContext>({
-  client,
-  commandsPath: path.join(process.env.COMPONENTS_PATH!, "commands"),
-  developerGuildId: process.env.DEVELOPER_GUILD_ID,
-  developerIds: process.env.DEVELOPERS_IDS!.split(",").map((id) => id.trim()),
-
-  createContext: async (interaction) => ({
-    client,
-    guildDB: await client.guildDB.get(interaction.guildId)
-  }),
-
-  onError: ({ error, item }) => {
-    void client.bus.emit("alert", {
-      name: `COMMAND_EXECUTION_FAILURE:${item.name}`,
-      severity: item.devOnly ? "warning" : "critical",
-      error
-    });
-  }
-});
-
-await slashCommands.loadCommands();
-await slashCommands.registerCommands();
-slashCommands.listen();
+```bash
+npm install discord.js
 ```
 
-Command module:
+---
+
+## Quick Example
+
+### Slash Command
 
 ```ts
 import { SlashCommand } from "@glowland/discord-framework/slash";
 
-export default new SlashCommand<GlowContext>({
+export default new SlashCommand({
   name: "ping",
-  description: "Replies with pong.",
+  description: "Replies with Pong.",
 
-  async execute({ client, guildDB }, interaction) {
+  async execute(ctx, interaction) {
     await interaction.reply("Pong.");
   }
 });
 ```
 
-## Buttons
+---
+
+### Registering Managers
 
 ```ts
-import { Button } from "@glowland/discord-framework/buttons";
+import path from "node:path";
+import { SlashCommandManager } from "@glowland/discord-framework/slash";
 
-export default new Button<GlowContext>({
-  customId: "music.stop",
-  permission: "ManageGuild",
+const commands = new SlashCommandManager({
+  client,
+  commandsPath: path.join(process.env.COMPONENTS_PATH!, "commands"),
 
-  async execute({ client, guildDB }, interaction) {
-    await interaction.deferUpdate();
-  }
+  createContext: async (interaction) => ({
+    client,
+    guildDB: await client.guildDB.get(interaction.guildId)
+  })
 });
+
+await commands.loadCommands();
+await commands.registerCommands();
+commands.listen();
 ```
 
-## Select menus
+---
+
+## Architecture
+
+The framework is built in layers:
+
+### High-level managers
+
+* SlashCommandManager
+* ButtonManager
+* SelectMenuManager
+* MessageManager
+
+These provide:
+
+* structured pipelines
+* permission handling
+* context injection
+
+---
+
+### Low-level access
+
+* EventManager
+* EventModule
+
+Use this when you need full control over raw `discord.js` events.
 
 ```ts
-import { SelectMenu, SelectMenuType } from "@glowland/discord-framework/select-menus";
-
-export default new SelectMenu<GlowContext, "String">({
-  customId: "settings.language",
-  type: "String",
-
-  async execute(context, interaction) {
-    const selected = interaction.values[0];
-    await interaction.reply({ flags: "Ephemeral", content: selected });
-  }
-});
-```
-
-## Messages
-
-```ts
-import { MessageModule } from "@glowland/discord-framework/messages";
-
-export default new MessageModule<GlowContext>({
-  trigger: "!ping",
-
-  async execute(context, message) {
-    await message.reply("Pong.");
-  }
-});
-```
-
-## Events
-
-```ts
-import { EventModule } from "@glowland/discord-framework/events";
-
-export default new EventModule<GlowContext, "ready">({
+export default new EventModule({
   name: "ready",
-  once: true,
 
-  async execute({ client }) {
-    console.log(`${client.user.tag} ready`);
+  async execute(client) {
+    console.log(`Ready as ${client.user.tag}`);
   }
 });
 ```
 
-## Design
+---
 
-The package intentionally does not know about your `Bot`, database layer, event bus, colors, emojis, or environment variables. Those belong in the app. Managers receive a `createContext` hook and optional error/permission replies so your bot keeps full control.
+## Context System
 
-## Notes
+Every manager receives a `createContext` function:
 
-- Node.js 20+ recommended.
-- `discord.js` is a peer dependency.
-- Dynamic imports use cache busting by default so reload methods can pick up edited files during development.
+```ts
+createContext: async (interaction) => ({
+  client,
+  guildDB: await client.guildDB.get(interaction.guildId)
+})
+```
+
+This keeps the framework:
+
+* unopinionated
+* decoupled from your services
+
+---
+
+## Reloading
+
+Managers include built-in reload methods:
+
+```ts
+await commands.reloadCommands();
+await buttons.reloadButtons();
+await messages.reloadMessages();
+```
+
+You can implement your own file watchers or trigger reloads manually.
+
+---
+
+## Design Goals
+
+* No hidden magic
+* Strong typing without breaking DX
+* Explicit over implicit
+* Framework, not a template
+
+---
+
+## License
+
+MIT
