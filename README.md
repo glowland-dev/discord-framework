@@ -36,7 +36,7 @@ npm install discord.js
 ### Slash Command
 
 ```ts
-import { SlashCommand } from "@glowland/discord-framework/slash";
+import { SlashCommand } from "@glowland/discord-framework";
 
 export default new SlashCommand({
   name: "ping",
@@ -54,7 +54,7 @@ export default new SlashCommand({
 
 ```ts
 import path from "node:path";
-import { SlashCommandManager } from "@glowland/discord-framework/slash";
+import { SlashCommandManager } from "@glowland/discord-framework";
 
 const commands = new SlashCommandManager({
   client,
@@ -137,6 +137,7 @@ Managers include built-in reload methods:
 await commands.reloadCommands();
 await buttons.reloadButtons();
 await messages.reloadMessages();
+await selectMenus.reloadSelectMenus();
 ```
 
 You can implement your own file watchers or trigger reloads manually.
