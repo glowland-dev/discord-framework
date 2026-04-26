@@ -8,7 +8,7 @@ import {
   type FrameworkErrorPayload,
   type MaybePromise,
 } from "../core/errors.js";
-import { Button } from "./Button.js";
+import { ButtonModule } from "./ButtonModule.js";
 import { loadDefaultModules } from "../core/files.js";
 import { warnDuplicate } from "../core/duplicates.js";
 
@@ -23,7 +23,7 @@ export interface ButtonManagerOptions<
   ) => MaybePromise<TContext>;
   onError?: (
     payload: FrameworkErrorPayload<
-      Button<TContext>,
+      ButtonModule<TContext>,
       TContext,
       ButtonInteraction<"cached">
     >,
@@ -44,7 +44,7 @@ export class ButtonManager<
   private readonly permissionReply_: InteractionReplyOptions | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
-  private readonly buttonCache_ = new Map<string, Button<TContext>>();
+  private readonly buttonCache_ = new Map<string, ButtonModule<TContext>>();
 
   constructor(options: ButtonManagerOptions<TContext>) {
     this.client_ = options.client;
@@ -62,15 +62,16 @@ export class ButtonManager<
     this.cacheBust_ = options.cacheBust ?? true;
   }
 
-  get buttonCache(): ReadonlyMap<string, Button<TContext>> {
+  get buttonCache(): ReadonlyMap<string, ButtonModule<TContext>> {
     return this.buttonCache_;
   }
 
   async loadButtons(): Promise<void> {
-    const buttons = await loadDefaultModules<Button<TContext>>({
+    const buttons = await loadDefaultModules<ButtonModule<TContext>>({
       directory: this.buttonsPath_,
       cacheBust: this.cacheBust_,
-      validate: (value): value is Button<TContext> => value instanceof Button,
+      validate: (value): value is ButtonModule<TContext> =>
+        value instanceof ButtonModule,
     });
 
     for (const button of buttons) {

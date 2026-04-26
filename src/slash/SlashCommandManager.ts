@@ -9,7 +9,7 @@ import {
   type MaybePromise,
 } from "../core/errors.js";
 import { loadDefaultModules } from "../core/files.js";
-import { SlashCommand } from "./SlashCommand.js";
+import { SlashCommandModule } from "./SlashCommandModule.js";
 import { warnDuplicate } from "../core/duplicates.js";
 
 export interface SlashCommandManagerOptions<
@@ -25,7 +25,7 @@ export interface SlashCommandManagerOptions<
   ) => MaybePromise<TContext>;
   onError?: (
     payload: FrameworkErrorPayload<
-      SlashCommand<TContext>,
+      SlashCommandModule<TContext>,
       TContext,
       ChatInputCommandInteraction<"cached">
     >,
@@ -47,8 +47,14 @@ export class SlashCommandManager<
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
 
-  private readonly commandCache_ = new Map<string, SlashCommand<TContext>>();
-  private readonly devCommandCache_ = new Map<string, SlashCommand<TContext>>();
+  private readonly commandCache_ = new Map<
+    string,
+    SlashCommandModule<TContext>
+  >();
+  private readonly devCommandCache_ = new Map<
+    string,
+    SlashCommandModule<TContext>
+  >();
 
   constructor(options: SlashCommandManagerOptions<TContext, TClient>) {
     this.client_ = options.client;
@@ -64,20 +70,20 @@ export class SlashCommandManager<
     this.cacheBust_ = options.cacheBust ?? true;
   }
 
-  get commandCache(): ReadonlyMap<string, SlashCommand<TContext>> {
+  get commandCache(): ReadonlyMap<string, SlashCommandModule<TContext>> {
     return this.commandCache_;
   }
 
-  get devCommandCache(): ReadonlyMap<string, SlashCommand<TContext>> {
+  get devCommandCache(): ReadonlyMap<string, SlashCommandModule<TContext>> {
     return this.devCommandCache_;
   }
 
   async loadCommands(): Promise<void> {
-    const commands = await loadDefaultModules<SlashCommand<TContext>>({
+    const commands = await loadDefaultModules<SlashCommandModule<TContext>>({
       directory: this.commandsPath_,
       cacheBust: this.cacheBust_,
-      validate: (value): value is SlashCommand<TContext> =>
-        value instanceof SlashCommand,
+      validate: (value): value is SlashCommandModule<TContext> =>
+        value instanceof SlashCommandModule,
     });
 
     for (const command of commands) {

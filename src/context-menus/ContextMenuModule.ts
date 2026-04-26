@@ -38,7 +38,7 @@ export interface ContextMenuOptions<TContext, T extends ContextType> {
   ): MaybePromise<void>;
 }
 
-export class ContextMenu<
+export class ContextMenuModule<
   TContext = unknown,
   T extends ContextType = ContextType,
 > {

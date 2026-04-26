@@ -38,7 +38,10 @@ export interface SelectMenuOptions<TContext, T extends SelectType> {
   ): MaybePromise<void>;
 }
 
-export class SelectMenu<TContext = unknown, T extends SelectType = SelectType> {
+export class SelectMenuModule<
+  TContext = unknown,
+  T extends SelectType = SelectType,
+> {
   readonly customId: string;
   readonly type: T;
   readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];

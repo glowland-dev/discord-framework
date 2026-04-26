@@ -11,10 +11,14 @@ import {
 } from "../core/errors.js";
 import { loadDefaultModules } from "../core/files.js";
 
-import { SelectMenu, SelectMenuType, type SelectType } from "./SelectMenu.js";
+import {
+  SelectMenuModule,
+  SelectMenuType,
+  type SelectType,
+} from "./SelectMenuModule.js";
 import { warnDuplicate } from "../core/duplicates.js";
 
-type AnySelectMenu<TContext> = SelectMenu<TContext, SelectType>;
+type AnySelectMenu<TContext> = SelectMenuModule<TContext, SelectType>;
 
 export interface SelectMenuManagerOptions<
   TContext,
@@ -82,7 +86,7 @@ export class SelectMenuManager<
       directory: this.selectMenusPath_,
       cacheBust: this.cacheBust_,
       validate: (value): value is AnySelectMenu<TContext> =>
-        value instanceof SelectMenu,
+        value instanceof SelectMenuModule,
     });
 
     for (const selectMenu of selectMenus) {

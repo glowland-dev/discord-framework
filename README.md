@@ -5,9 +5,9 @@ A **small, typed, file-driven framework** for Discord bots built on `discord.js`
 It handles the boring runtime work:
 
 1. Load modules from folders.
-2. Route Discord interactions/events to those modules.
+2. Route Discord interactions, messages, voice updates, and events to those modules.
 3. Inject your app context.
-4. Handle permissions, errors, reloads, and registration.
+4. Handle permissions, errors, reloads, and command registration.
 
 No DI container. No hidden lifecycle. No template prison.
 
@@ -22,6 +22,7 @@ No DI container. No hidden lifecycle. No template prison.
 * Button manager
 * Select menu manager
 * Message module manager
+* Voice state update manager
 * Event manager
 * Shared application-command registration
 * Developer-only application commands
@@ -40,6 +41,23 @@ npm i @glowland/discord-framework discord.js
 
 ---
 
+## Breaking changes
+
+This release renames public module classes for consistency.
+
+```ts
+SlashCommand -> SlashCommandModule
+ContextMenu -> ContextMenuModule
+Button -> ButtonModule
+SelectMenu -> SelectMenuModule
+```
+
+These names already matched the mental model of the package. The new names make that explicit.
+
+`MessageModule` and `EventModule` keep their names.
+
+---
+
 ## Mental model
 
 > Put a module in the right folder, export the right class, load the folder, then listen.
@@ -54,12 +72,13 @@ You keep your bot architecture. The framework just gives you clean routing.
 
 ```text
 components/
-  commands/        # slash commands
-  context-menus/   # user/message context menus
-  buttons/         # button handlers
-  select-menus/    # select menu handlers
-  messages/        # message modules
-  events/          # raw discord.js events
+  commands/              # slash command modules
+  context-menus/         # user/message context menu modules
+  buttons/               # button modules
+  select-menus/          # select menu modules
+  messages/              # message modules
+  voice-state-updates/   # voiceStateUpdate modules
+  events/                # raw discord.js event modules
 ```
 
 Each manager loads one folder.
@@ -76,43 +95,46 @@ import {
   ButtonManager,
   SelectMenuManager,
   MessageManager,
+  VoiceStateUpdateManager,
   EventManager,
-  registerApplicationCommands
+  registerApplicationCommands,
 } from "@glowland/discord-framework";
 
 const componentsPath = process.env.COMPONENTS_PATH!;
 
-const createContext = async (interaction: { guildId: string }) => ({
+const createInteractionContext = async (interaction: { guildId: string }) => ({
   client,
-  guildDB: await client.guildDB.get(interaction.guildId)
+  guildDB: await client.guildDB.get(interaction.guildId),
 });
 
 const slashCommands = new SlashCommandManager({
   client,
   commandsPath: path.join(componentsPath, "commands"),
   developerGuildId: process.env.DEVELOPER_GUILD_ID,
-  developerIds: process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
-  createContext
+  developerIds:
+    process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
+  createContext: createInteractionContext,
 });
 
 const contextMenus = new ContextMenuManager({
   client,
   contextMenusPath: path.join(componentsPath, "context-menus"),
   developerGuildId: process.env.DEVELOPER_GUILD_ID,
-  developerIds: process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
-  createContext
+  developerIds:
+    process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
+  createContext: createInteractionContext,
 });
 
 const buttons = new ButtonManager({
   client,
   buttonsPath: path.join(componentsPath, "buttons"),
-  createContext
+  createContext: createInteractionContext,
 });
 
 const selectMenus = new SelectMenuManager({
   client,
   selectMenusPath: path.join(componentsPath, "select-menus"),
-  createContext
+  createContext: createInteractionContext,
 });
 
 const messages = new MessageManager({
@@ -120,14 +142,23 @@ const messages = new MessageManager({
   messagesPath: path.join(componentsPath, "messages"),
   createContext: async (message) => ({
     client,
-    guildDB: await client.guildDB.get(message.guildId)
-  })
+    guildDB: await client.guildDB.get(message.guildId),
+  }),
+});
+
+const voiceStateUpdates = new VoiceStateUpdateManager({
+  client,
+  voiceStateUpdatesPath: path.join(componentsPath, "voice-state-updates"),
+  createContext: async (oldState, newState) => ({
+    client,
+    guildDB: await client.guildDB.get(newState.guild.id),
+  }),
 });
 
 const events = new EventManager({
   client,
   eventsPath: path.join(componentsPath, "events"),
-  createContext: async () => client
+  createContext: async () => client,
 });
 
 await slashCommands.loadCommands();
@@ -137,13 +168,13 @@ await registerApplicationCommands(
   client,
   [
     ...slashCommands.commandCache.values(),
-    ...contextMenus.contextMenuCache.values()
+    ...contextMenus.contextMenuCache.values(),
   ].map((command) => command.toJSON()),
   [
     ...slashCommands.devCommandCache.values(),
-    ...contextMenus.devContextMenuCache.values()
+    ...contextMenus.devContextMenuCache.values(),
   ].map((command) => command.toJSON()),
-  process.env.DEVELOPER_GUILD_ID
+  process.env.DEVELOPER_GUILD_ID,
 );
 
 slashCommands.listen();
@@ -157,6 +188,9 @@ selectMenus.listen();
 
 await messages.loadMessages();
 messages.listen();
+
+await voiceStateUpdates.loadVoiceStateUpdates();
+voiceStateUpdates.listen();
 
 await events.loadEvents();
 events.listen();
@@ -180,27 +214,32 @@ So do this:
 Use:
 
 ```ts
-await registerApplicationCommands(client, globalCommands, developerCommands, developerGuildId);
+await registerApplicationCommands(
+  client,
+  globalCommands,
+  developerCommands,
+  developerGuildId,
+);
 ```
 
 Do **not** independently register slash commands and context menus unless you intentionally want to replace one set with the other.
 
 ---
 
-## Components
+## Modules
 
-### Slash command
+### Slash command module
 
 ```ts
-import { SlashCommand } from "@glowland/discord-framework";
+import { SlashCommandModule } from "@glowland/discord-framework";
 
-export default new SlashCommand({
+export default new SlashCommandModule({
   name: "ping",
   description: "Replies with Pong.",
 
   async execute(context, interaction) {
     await interaction.reply("Pong.");
-  }
+  },
 });
 ```
 
@@ -208,21 +247,21 @@ Slash command names are normalized to lowercase and spaces are replaced with hyp
 
 ---
 
-### Context menu
+### Context menu module
 
 ```ts
-import { ContextMenu } from "@glowland/discord-framework";
+import { ContextMenuModule } from "@glowland/discord-framework";
 
-export default new ContextMenu({
+export default new ContextMenuModule({
   name: "Inspect User",
   type: "User",
 
   async execute(context, interaction) {
     await interaction.reply({
       flags: "Ephemeral",
-      content: interaction.targetUser.tag
+      content: interaction.targetUser.tag,
     });
-  }
+  },
 });
 ```
 
@@ -235,20 +274,20 @@ The `type` field narrows the interaction type.
 
 ---
 
-### Button
+### Button module
 
 ```ts
-import { Button } from "@glowland/discord-framework";
+import { ButtonModule } from "@glowland/discord-framework";
 
-export default new Button({
+export default new ButtonModule({
   customId: "example.confirm",
 
   async execute(context, interaction) {
     await interaction.reply({
       flags: "Ephemeral",
-      content: "Confirmed."
+      content: "Confirmed.",
     });
-  }
+  },
 });
 ```
 
@@ -256,21 +295,21 @@ Buttons are matched by `customId`.
 
 ---
 
-### Select menu
+### Select menu module
 
 ```ts
-import { SelectMenu } from "@glowland/discord-framework";
+import { SelectMenuModule } from "@glowland/discord-framework";
 
-export default new SelectMenu({
+export default new SelectMenuModule({
   customId: "example.select",
   type: "String",
 
   async execute(context, interaction) {
     await interaction.reply({
       flags: "Ephemeral",
-      content: interaction.values.join(", ")
+      content: interaction.values.join(", "),
     });
-  }
+  },
 });
 ```
 
@@ -296,13 +335,35 @@ export default new MessageModule({
 
   async execute(context, message) {
     await message.reply("pong");
-  }
+  },
 });
 ```
 
 If `trigger` is omitted, the module runs for every guild message.
 
 Use global message modules carefully.
+
+---
+
+### Voice state update module
+
+```ts
+import { VoiceStateUpdateModule } from "@glowland/discord-framework";
+
+export default new VoiceStateUpdateModule({
+  async execute(context, oldState, newState) {
+    if (oldState.channelId === newState.channelId) return;
+
+    console.log(
+      `${newState.member.user.tag} moved from ${oldState.channelId} to ${newState.channelId}`,
+    );
+  },
+});
+```
+
+Voice state update modules run on Discord's `voiceStateUpdate` event.
+
+Use them for voice features that do not need to own the raw event manager, like temporary voice channels, music cleanup, AFK handling, or audit logic.
 
 ---
 
@@ -317,11 +378,13 @@ export default new EventModule({
 
   execute(client) {
     console.log(`Ready as ${client.user.tag}`);
-  }
+  },
 });
 ```
 
 Event modules map directly to `discord.js` client events.
+
+Use `EventModule` when you want raw access to a Discord client event.
 
 ---
 
@@ -334,7 +397,7 @@ The framework does not decide what your context is. You do.
 ```ts
 createContext: async (interaction) => ({
   client,
-  guildDB: await client.guildDB.get(interaction.guildId)
+  guildDB: await client.guildDB.get(interaction.guildId),
 })
 ```
 
@@ -348,30 +411,38 @@ The framework stays generic, but your bot can create nicer local aliases.
 
 ```ts
 import {
-  SlashCommand,
-  Button,
+  SlashCommandModule,
+  ButtonModule,
   MessageModule,
-  ContextMenu,
-  SelectMenu,
-  type ContextMenuOptions,
+  VoiceStateUpdateModule,
+  ContextMenuModule,
+  SelectMenuModule,
+  type ContextMenuModuleOptions,
   type ContextType,
-  type SelectMenuOptions,
-  type SelectType
+  type SelectMenuModuleOptions,
+  type SelectType,
 } from "@glowland/discord-framework";
 import type { GlowContext } from "./GlowContext.js";
 
-export const GlowCommand = SlashCommand<GlowContext>;
-export const GlowButton = Button<GlowContext>;
+export const GlowCommand = SlashCommandModule<GlowContext>;
+export const GlowButton = ButtonModule<GlowContext>;
 export const GlowMessage = MessageModule<GlowContext>;
+export const GlowVoiceStateUpdate = VoiceStateUpdateModule<GlowContext>;
 
-export class GlowContextMenu<T extends ContextType> extends ContextMenu<GlowContext, T> {
-  constructor(options: ContextMenuOptions<GlowContext, T>) {
+export class GlowContextMenu<T extends ContextType> extends ContextMenuModule<
+  GlowContext,
+  T
+> {
+  constructor(options: ContextMenuModuleOptions<GlowContext, T>) {
     super(options);
   }
 }
 
-export class GlowSelectMenu<T extends SelectType> extends SelectMenu<GlowContext, T> {
-  constructor(options: SelectMenuOptions<GlowContext, T>) {
+export class GlowSelectMenu<T extends SelectType> extends SelectMenuModule<
+  GlowContext,
+  T
+> {
+  constructor(options: SelectMenuModuleOptions<GlowContext, T>) {
     super(options);
   }
 }
@@ -388,7 +459,7 @@ export default new GlowCommand({
 
   async execute(context, interaction) {
     await interaction.reply("Pong.");
-  }
+  },
 });
 ```
 
@@ -403,23 +474,23 @@ Buttons, select menus, and context menus support permission checks.
 Use `permissionsRequired` when a user must have Discord permissions:
 
 ```ts
-export default new Button({
+export default new ButtonModule({
   customId: "admin.confirm",
   permissionsRequired: ["ManageGuild"],
 
   async execute(context, interaction) {
     await interaction.reply({
       flags: "Ephemeral",
-      content: "Allowed."
+      content: "Allowed.",
     });
-  }
+  },
 });
 ```
 
 Use `allowedRoleIds` as a bypass:
 
 ```ts
-export default new Button({
+export default new ButtonModule({
   customId: "staff.confirm",
   permissionsRequired: ["ManageGuild"],
   allowedRoleIds: ["123456789012345678"],
@@ -427,9 +498,9 @@ export default new Button({
   async execute(context, interaction) {
     await interaction.reply({
       flags: "Ephemeral",
-      content: "Allowed."
+      content: "Allowed.",
     });
-  }
+  },
 });
 ```
 
@@ -468,8 +539,9 @@ new SlashCommandManager({
   client,
   commandsPath,
   developerGuildId: process.env.DEVELOPER_GUILD_ID,
-  developerIds: process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
-  createContext
+  developerIds:
+    process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
+  createContext,
 });
 ```
 
@@ -485,6 +557,7 @@ await contextMenus.reloadContextMenus();
 await buttons.reloadButtons();
 await selectMenus.reloadSelectMenus();
 await messages.reloadMessages();
+await voiceStateUpdates.reloadVoiceStateUpdates();
 ```
 
 Reloading means:
@@ -528,7 +601,7 @@ new ButtonManager({
 
   onError: ({ error, item, context, interaction }) => {
     console.error(`Button failed: ${item.customId}`, error);
-  }
+  },
 });
 ```
 
@@ -549,3 +622,5 @@ Interaction managers can also send an error reply when execution fails.
 ---
 
 ## License
+
+MIT

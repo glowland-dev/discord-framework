@@ -16,7 +16,7 @@ export interface SlashCommandOptions<
   ): MaybePromise<void>;
 }
 
-export class SlashCommand<TContext = unknown> {
+export class SlashCommandModule<TContext = unknown> {
   readonly name: string;
   readonly description: string;
   readonly options: readonly ApplicationCommandOptionData[] | undefined;

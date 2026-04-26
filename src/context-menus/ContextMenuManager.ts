@@ -13,13 +13,13 @@ import {
 import { loadDefaultModules } from "../core/files.js";
 
 import {
-  ContextMenu,
+  ContextMenuModule,
   ContextMenuType,
   type ContextType,
-} from "./ContextMenu.js";
+} from "./ContextMenuModule.js";
 import { warnDuplicate } from "../core/duplicates.js";
 
-type AnyContextMenu<TContext> = ContextMenu<TContext, ContextType>;
+type AnyContextMenu<TContext> = ContextMenuModule<TContext, ContextType>;
 
 export interface ContextMenuManagerOptions<
   TContext,
@@ -98,7 +98,7 @@ export class ContextMenuManager<
       directory: this.contextMenusPath_,
       cacheBust: this.cacheBust_,
       validate: (value): value is AnyContextMenu<TContext> =>
-        value instanceof ContextMenu,
+        value instanceof ContextMenuModule,
     });
 
     for (const contextMenu of contextMenus) {

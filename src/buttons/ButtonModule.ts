@@ -11,7 +11,7 @@ export interface ButtonOptions<TContext> {
   ): MaybePromise<void>;
 }
 
-export class Button<TContext = unknown> {
+export class ButtonModule<TContext = unknown> {
   readonly customId: string;
   readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
   readonly allowedRoleIds?: readonly string[];
