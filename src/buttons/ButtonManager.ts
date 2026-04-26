@@ -4,12 +4,12 @@ import type {
   InteractionReplyOptions,
 } from "discord.js";
 import {
-  loadDefaultModules,
   replyToInteractionError,
   type FrameworkErrorPayload,
   type MaybePromise,
-} from "../core/index.js";
+} from "../core/errors.js";
 import { Button } from "./Button.js";
+import { loadDefaultModules } from "../core/files.js";
 
 export interface ButtonManagerOptions<
   TContext,

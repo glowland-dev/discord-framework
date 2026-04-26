@@ -2,13 +2,18 @@ import {
   ApplicationCommandType,
   type ApplicationCommandOptionData,
   type ChatInputApplicationCommandData,
-  type ChatInputCommandInteraction
+  type ChatInputCommandInteraction,
 } from "discord.js";
-import type { MaybePromise } from "../core/index.js";
+import type { MaybePromise } from "../core/errors.js";
 
-export interface SlashCommandOptions<TContext> extends ChatInputApplicationCommandData {
+export interface SlashCommandOptions<
+  TContext,
+> extends ChatInputApplicationCommandData {
   devOnly?: boolean;
-  execute(context: TContext, interaction: ChatInputCommandInteraction<"cached">): MaybePromise<void>;
+  execute(
+    context: TContext,
+    interaction: ChatInputCommandInteraction<"cached">,
+  ): MaybePromise<void>;
 }
 
 export class SlashCommand<TContext = unknown> {
@@ -32,7 +37,7 @@ export class SlashCommand<TContext = unknown> {
       name: this.name,
       description: this.description,
       type: this.type,
-      ...(this.options ? { options: this.options } : {})
+      ...(this.options ? { options: this.options } : {}),
     };
   }
 }

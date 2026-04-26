@@ -1,10 +1,10 @@
 import type { Client, Message } from "discord.js";
 import {
-  loadDefaultModules,
   type FrameworkErrorPayload,
   type MaybePromise,
-} from "../core/index.js";
+} from "../core/errors.js";
 import { MessageModule } from "./MessageModule.js";
+import { loadDefaultModules } from "../core/files.js";
 
 export interface MessageManagerOptions<
   TContext,

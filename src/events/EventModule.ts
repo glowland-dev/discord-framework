@@ -1,5 +1,5 @@
 import type { ClientEvents } from "discord.js";
-import type { MaybePromise } from "../core/index.js";
+import type { MaybePromise } from "../core/errors.js";
 
 export type EventName = keyof ClientEvents;
 

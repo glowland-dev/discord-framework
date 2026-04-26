@@ -1,10 +1,13 @@
 import type { ButtonInteraction, PermissionFlagsBits } from "discord.js";
-import type { MaybePromise } from "../core/index.js";
+import type { MaybePromise } from "../core/errors.js";
 
 export interface ButtonOptions<TContext> {
   customId: string;
   permission?: keyof typeof PermissionFlagsBits;
-  execute(context: TContext, interaction: ButtonInteraction<"cached">): MaybePromise<void>;
+  execute(
+    context: TContext,
+    interaction: ButtonInteraction<"cached">,
+  ): MaybePromise<void>;
 }
 
 export class Button<TContext = unknown> {

@@ -174,7 +174,6 @@ export class ContextMenuManager<
     this.contextMenuCache_.clear();
     this.devContextMenuCache_.clear();
     await this.loadContextMenus();
-    await this.registerContextMenus();
   }
 
   private createCacheKey_(

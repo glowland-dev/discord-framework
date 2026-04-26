@@ -1,5 +1,5 @@
 import type { Message } from "discord.js";
-import type { MaybePromise } from "../core/index.js";
+import type { MaybePromise } from "../core/errors.js";
 
 export interface MessageModuleOptions<TContext> {
   trigger?: string;

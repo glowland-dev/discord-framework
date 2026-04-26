@@ -5,16 +5,16 @@ import {
   type PermissionFlagsBits,
   type RoleSelectMenuInteraction,
   type StringSelectMenuInteraction,
-  type UserSelectMenuInteraction
+  type UserSelectMenuInteraction,
 } from "discord.js";
-import type { MaybePromise } from "../core/index.js";
+import type { MaybePromise } from "../core/errors.js";
 
 export const SelectMenuType = {
   String: ComponentType.StringSelect,
   User: ComponentType.UserSelect,
   Role: ComponentType.RoleSelect,
   Mentionable: ComponentType.MentionableSelect,
-  Channel: ComponentType.ChannelSelect
+  Channel: ComponentType.ChannelSelect,
 } as const;
 
 export type SelectType = keyof typeof SelectMenuType;
@@ -33,7 +33,7 @@ export interface SelectMenuOptions<TContext, T extends SelectType> {
   permission?: keyof typeof PermissionFlagsBits;
   execute(
     context: TContext,
-    interaction: SelectMenuInteractionMap[(typeof SelectMenuType)[T]]
+    interaction: SelectMenuInteractionMap[(typeof SelectMenuType)[T]],
   ): MaybePromise<void>;
 }
 

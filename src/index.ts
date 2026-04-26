@@ -1,3 +1,4 @@
+export * from "./core/commands.js";
 export * from "./core/errors.js";
 export * from "./core/files.js";
 

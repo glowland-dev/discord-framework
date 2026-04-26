@@ -7,7 +7,7 @@ import {
   replyToInteractionError,
   type FrameworkErrorPayload,
   type MaybePromise,
-} from "../core/index.js";
+} from "../core/errors.js";
 import { loadDefaultModules } from "../core/files.js";
 import { SlashCommand } from "./SlashCommand.js";
 
@@ -135,6 +135,5 @@ export class SlashCommandManager<
     this.commandCache_.clear();
     this.devCommandCache_.clear();
     await this.loadCommands();
-    await this.registerCommands();
   }
 }

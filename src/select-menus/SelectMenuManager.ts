@@ -1,16 +1,15 @@
 import {
-  ComponentType,
   type AnySelectMenuInteraction,
   type Client,
   type InteractionReplyOptions,
 } from "discord.js";
 
 import {
-  loadDefaultModules,
   replyToInteractionError,
   type FrameworkErrorPayload,
   type MaybePromise,
-} from "../core/index.js";
+} from "../core/errors.js";
+import { loadDefaultModules } from "../core/files.js";
 
 import { SelectMenu, SelectMenuType, type SelectType } from "./SelectMenu.js";
 
