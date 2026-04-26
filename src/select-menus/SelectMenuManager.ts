@@ -12,6 +12,7 @@ import {
 import { loadDefaultModules } from "../core/files.js";
 
 import { SelectMenu, SelectMenuType, type SelectType } from "./SelectMenu.js";
+import { warnDuplicate } from "../core/duplicates.js";
 
 type AnySelectMenu<TContext> = SelectMenu<TContext, SelectType>;
 
@@ -85,6 +86,10 @@ export class SelectMenuManager<
     });
 
     for (const selectMenu of selectMenus) {
+      if (this.selectMenuCache_.has(selectMenu.customId)) {
+        warnDuplicate("SelectMenuManager", selectMenu.customId);
+      }
+
       this.selectMenuCache_.set(selectMenu.customId, selectMenu);
     }
   }

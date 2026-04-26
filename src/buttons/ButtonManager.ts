@@ -10,6 +10,7 @@ import {
 } from "../core/errors.js";
 import { Button } from "./Button.js";
 import { loadDefaultModules } from "../core/files.js";
+import { warnDuplicate } from "../core/duplicates.js";
 
 export interface ButtonManagerOptions<
   TContext,
@@ -72,8 +73,13 @@ export class ButtonManager<
       validate: (value): value is Button<TContext> => value instanceof Button,
     });
 
-    for (const button of buttons)
+    for (const button of buttons) {
+      if (this.buttonCache_.has(button.customId)) {
+        warnDuplicate("ButtonManager", button.customId);
+      }
+
       this.buttonCache_.set(button.customId, button);
+    }
   }
 
   listen(): void {

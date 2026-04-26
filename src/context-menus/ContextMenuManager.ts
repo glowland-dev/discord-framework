@@ -17,6 +17,7 @@ import {
   ContextMenuType,
   type ContextType,
 } from "./ContextMenu.js";
+import { warnDuplicate } from "../core/duplicates.js";
 
 type AnyContextMenu<TContext> = ContextMenu<TContext, ContextType>;
 
@@ -100,30 +101,16 @@ export class ContextMenuManager<
         ContextMenuType[contextMenu.type],
       );
 
-      if (contextMenu.devOnly) {
-        this.devContextMenuCache_.set(cacheKey, contextMenu);
-      } else {
-        this.contextMenuCache_.set(cacheKey, contextMenu);
+      const cache = contextMenu.devOnly
+        ? this.devContextMenuCache_
+        : this.contextMenuCache_;
+
+      if (cache.has(cacheKey)) {
+        warnDuplicate("ContextMenuManager", cacheKey);
       }
-    }
-  }
 
-  async registerContextMenus(): Promise<void> {
-    if (this.developerGuildId_) {
-      await this.client_.guilds.cache
-        .get(this.developerGuildId_)
-        ?.commands.set(
-          [...this.devContextMenuCache_.values()].map((contextMenu) =>
-            contextMenu.toJSON(),
-          ),
-        );
+      cache.set(cacheKey, contextMenu);
     }
-
-    await this.client_.application?.commands.set(
-      [...this.contextMenuCache_.values()].map((contextMenu) =>
-        contextMenu.toJSON(),
-      ),
-    );
   }
 
   listen(): void {

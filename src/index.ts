@@ -1,6 +1,7 @@
 export * from "./core/commands.js";
 export * from "./core/errors.js";
 export * from "./core/files.js";
+export * from "./core/duplicates.js";
 
 export * from "./slash/SlashCommand.js";
 export * from "./slash/SlashCommandManager.js";

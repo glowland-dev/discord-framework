@@ -10,6 +10,7 @@ import {
 } from "../core/errors.js";
 import { loadDefaultModules } from "../core/files.js";
 import { SlashCommand } from "./SlashCommand.js";
+import { warnDuplicate } from "../core/duplicates.js";
 
 export interface SlashCommandManagerOptions<
   TContext,
@@ -80,25 +81,16 @@ export class SlashCommandManager<
     });
 
     for (const command of commands) {
-      if (command.devOnly) this.devCommandCache_.set(command.name, command);
-      else this.commandCache_.set(command.name, command);
-    }
-  }
+      const cache = command.devOnly
+        ? this.devCommandCache_
+        : this.commandCache_;
 
-  async registerCommands(): Promise<void> {
-    if (this.developerGuildId_) {
-      await this.client_.guilds.cache
-        .get(this.developerGuildId_)
-        ?.commands.set(
-          [...this.devCommandCache_.values()].map((command) =>
-            command.toJSON(),
-          ),
-        );
-    }
+      if (cache.has(command.name)) {
+        warnDuplicate("SlashCommandManager", command.name);
+      }
 
-    await this.client_.application?.commands.set(
-      [...this.commandCache_.values()].map((command) => command.toJSON()),
-    );
+      cache.set(command.name, command);
+    }
   }
 
   listen(): void {
