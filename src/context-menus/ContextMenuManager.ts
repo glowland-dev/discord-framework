@@ -39,6 +39,7 @@ export interface ContextMenuManagerOptions<
       ContextMenuCommandInteraction<"cached">
     >,
   ) => MaybePromise<void>;
+  permissionReply?: InteractionReplyOptions | false;
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -53,6 +54,7 @@ export class ContextMenuManager<
   private readonly developerIds_: readonly string[];
   private readonly createContext_: ContextMenuManagerOptions<TContext>["createContext"];
   private readonly onError_: ContextMenuManagerOptions<TContext>["onError"];
+  private readonly permissionReply_: InteractionReplyOptions | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
 
@@ -72,6 +74,10 @@ export class ContextMenuManager<
     this.developerIds_ = options.developerIds ?? [];
     this.createContext_ = options.createContext;
     this.onError_ = options.onError;
+    this.permissionReply_ = options.permissionReply ?? {
+      flags: "Ephemeral",
+      content: "You don't have permission to use this button.",
+    };
     this.errorReply_ = options.errorReply ?? {
       flags: "Ephemeral",
       content: "An error occurred while executing this context menu.",
@@ -135,6 +141,25 @@ export class ContextMenuManager<
         const isDeveloper = this.developerIds_.includes(interaction.user.id);
         const isDeveloperGuild = interaction.guildId === this.developerGuildId_;
         if (!isDeveloper || !isDeveloperGuild) return;
+      }
+
+      const hasAllowedRole =
+        contextMenu.allowedRoleIds?.some((id) =>
+          interaction.member.roles.cache.has(id),
+        ) ?? false;
+
+      const hasRequiredPermissions =
+        contextMenu.permissionsRequired?.every((permission) =>
+          interaction.memberPermissions.has(permission),
+        ) ?? true;
+
+      // allow if either condition passes
+      if (!hasAllowedRole && !hasRequiredPermissions) {
+        if (this.permissionReply_ !== false && interaction.isRepliable()) {
+          await replyToInteractionError(interaction, this.permissionReply_);
+        }
+
+        return;
       }
 
       let context: TContext | undefined;

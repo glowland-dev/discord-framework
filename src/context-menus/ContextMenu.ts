@@ -1,5 +1,6 @@
 import {
   ApplicationCommandType,
+  PermissionFlagsBits,
   type MessageApplicationCommandData,
   type MessageContextMenuCommandInteraction,
   type UserApplicationCommandData,
@@ -29,6 +30,8 @@ export interface ContextMenuOptions<TContext, T extends ContextType> {
   name: string;
   type: T;
   devOnly?: boolean;
+  permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
+  allowedRoleIds?: readonly string[];
   execute(
     context: TContext,
     interaction: ContextMenuInteractionMap[(typeof ContextMenuType)[T]],
@@ -42,12 +45,16 @@ export class ContextMenu<
   readonly name: string;
   readonly type: T;
   readonly devOnly: boolean;
+  readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
+  readonly allowedRoleIds?: readonly string[];
   readonly execute: ContextMenuOptions<TContext, T>["execute"];
 
   constructor(options: ContextMenuOptions<TContext, T>) {
     this.name = options.name;
     this.type = options.type;
     this.devOnly = options.devOnly ?? false;
+    this.permissionsRequired = options.permissionsRequired;
+    this.allowedRoleIds = options.allowedRoleIds;
     this.execute = options.execute;
   }
 

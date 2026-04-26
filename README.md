@@ -1,45 +1,56 @@
 # @glowland/discord-framework
 
-A **small, typed, file-driven framework** for Discord bots on `discord.js`.
+A **small, typed, file-driven framework** for Discord bots built on `discord.js`.
 
-It does two things well:
+It handles the boring runtime work:
 
-1. **Load stuff from folders** (commands, buttons, menus, messages, events)
-2. **Route Discord events to your code** (with types, context, and errors handled)
+1. Load modules from folders.
+2. Route Discord interactions/events to those modules.
+3. Inject your app context.
+4. Handle permissions, errors, reloads, and registration.
 
-No magic. No DI. No hidden lifecycle.
+No DI container. No hidden lifecycle. No template prison.
 
 ---
 
-## What you get
+## Features
 
 * Typed wrappers over `discord.js`
-* File-based modules (drop a file → it works)
-* Managers for each interaction type
-* Centralized application-command registration (slash + context menus together)
+* File-based module loading
+* Slash command manager
+* Context menu manager
+* Button manager
+* Select menu manager
+* Message module manager
+* Event manager
+* Shared application-command registration
+* Developer-only application commands
 * Built-in reload methods
-* Minimal opinions about your app
+* Permission checks with role bypass support
+* Duplicate component warnings in development
+* Minimal assumptions about your project structure
 
 ---
 
-## Install
+## Installation
 
 ```bash
-npm i @glowland/discord-framework
-npm i discord.js
+npm i @glowland/discord-framework discord.js
 ```
 
 ---
 
-## The rule (read this once)
+## Mental model
 
-> Put a module in the right folder, export the right class, call `load()`, then `listen()`.
+> Put a module in the right folder, export the right class, load the folder, then listen.
 
-That’s it.
+That is the whole framework.
+
+You keep your bot architecture. The framework just gives you clean routing.
 
 ---
 
-## Folders (default idea)
+## Suggested folder structure
 
 ```text
 components/
@@ -48,14 +59,14 @@ components/
   buttons/         # button handlers
   select-menus/    # select menu handlers
   messages/        # message modules
-  events/          # raw discord events
+  events/          # raw discord.js events
 ```
 
-Each manager loads ONE folder.
+Each manager loads one folder.
 
 ---
 
-## Quick start (copy this)
+## Quick start
 
 ```ts
 import path from "node:path";
@@ -69,79 +80,80 @@ import {
   registerApplicationCommands
 } from "@glowland/discord-framework";
 
-// 1) context factory
-const createContext = async (interaction) => ({
+const componentsPath = process.env.COMPONENTS_PATH!;
+
+const createContext = async (interaction: { guildId: string }) => ({
   client,
   guildDB: await client.guildDB.get(interaction.guildId)
 });
 
-// 2) managers
-const slash = new SlashCommandManager({
+const slashCommands = new SlashCommandManager({
   client,
-  commandsPath: path.join(COMPONENTS_PATH, "commands"),
+  commandsPath: path.join(componentsPath, "commands"),
+  developerGuildId: process.env.DEVELOPER_GUILD_ID,
+  developerIds: process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
   createContext
 });
 
 const contextMenus = new ContextMenuManager({
   client,
-  contextMenusPath: path.join(COMPONENTS_PATH, "context-menus"),
+  contextMenusPath: path.join(componentsPath, "context-menus"),
+  developerGuildId: process.env.DEVELOPER_GUILD_ID,
+  developerIds: process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
   createContext
 });
 
 const buttons = new ButtonManager({
   client,
-  buttonsPath: path.join(COMPONENTS_PATH, "buttons"),
+  buttonsPath: path.join(componentsPath, "buttons"),
   createContext
 });
 
-const selects = new SelectMenuManager({
+const selectMenus = new SelectMenuManager({
   client,
-  selectMenusPath: path.join(COMPONENTS_PATH, "select-menus"),
+  selectMenusPath: path.join(componentsPath, "select-menus"),
   createContext
 });
 
 const messages = new MessageManager({
   client,
-  messagesPath: path.join(COMPONENTS_PATH, "messages"),
-  createContext: async (msg) => ({
+  messagesPath: path.join(componentsPath, "messages"),
+  createContext: async (message) => ({
     client,
-    guildDB: await client.guildDB.get(msg.guildId)
+    guildDB: await client.guildDB.get(message.guildId)
   })
 });
 
 const events = new EventManager({
   client,
-  eventsPath: path.join(COMPONENTS_PATH, "events"),
+  eventsPath: path.join(componentsPath, "events"),
   createContext: async () => client
 });
 
-// 3) load command-like things
-await slash.loadCommands();
+await slashCommands.loadCommands();
 await contextMenus.loadContextMenus();
 
-// 4) REGISTER ONCE (IMPORTANT)
 await registerApplicationCommands(
   client,
   [
-    ...slash.commandCache.values(),
+    ...slashCommands.commandCache.values(),
     ...contextMenus.contextMenuCache.values()
-  ].map((c) => c.toJSON()),
+  ].map((command) => command.toJSON()),
   [
-    ...slash.devCommandCache.values(),
+    ...slashCommands.devCommandCache.values(),
     ...contextMenus.devContextMenuCache.values()
-  ].map((c) => c.toJSON()),
+  ].map((command) => command.toJSON()),
   process.env.DEVELOPER_GUILD_ID
 );
 
-// 5) start listeners
-slash.listen();
+slashCommands.listen();
 contextMenus.listen();
 
 await buttons.loadButtons();
 buttons.listen();
 
-await selects.loadSelectMenus();
-selects.listen();
+await selectMenus.loadSelectMenus();
+selectMenus.listen();
 
 await messages.loadMessages();
 messages.listen();
@@ -152,23 +164,30 @@ events.listen();
 
 ---
 
-## Why the shared registration?
+## Important: register slash commands and context menus together
 
-Slash commands and context menus are the **same Discord registry**.
+Slash commands and context menus both live in Discord's application command registry.
 
-Calling `.commands.set()` twice will overwrite the previous set.
+Calling `.commands.set(...)` replaces the full command list for that scope.
 
-So:
+So do this:
 
-* load both
-* merge
-* register once
+1. Load slash commands.
+2. Load context menus.
+3. Merge both lists.
+4. Register once.
 
-Use `registerApplicationCommands` for that.
+Use:
+
+```ts
+await registerApplicationCommands(client, globalCommands, developerCommands, developerGuildId);
+```
+
+Do **not** independently register slash commands and context menus unless you intentionally want to replace one set with the other.
 
 ---
 
-## Create components
+## Components
 
 ### Slash command
 
@@ -179,11 +198,13 @@ export default new SlashCommand({
   name: "ping",
   description: "Replies with Pong.",
 
-  async execute(ctx, interaction) {
+  async execute(context, interaction) {
     await interaction.reply("Pong.");
   }
 });
 ```
+
+Slash command names are normalized to lowercase and spaces are replaced with hyphens.
 
 ---
 
@@ -196,7 +217,7 @@ export default new ContextMenu({
   name: "Inspect User",
   type: "User",
 
-  async execute(ctx, interaction) {
+  async execute(context, interaction) {
     await interaction.reply({
       flags: "Ephemeral",
       content: interaction.targetUser.tag
@@ -205,10 +226,12 @@ export default new ContextMenu({
 });
 ```
 
-Types:
+Supported types:
 
 * `User`
 * `Message`
+
+The `type` field narrows the interaction type.
 
 ---
 
@@ -218,13 +241,18 @@ Types:
 import { Button } from "@glowland/discord-framework";
 
 export default new Button({
-  customId: "example.ok",
+  customId: "example.confirm",
 
-  async execute(ctx, interaction) {
-    await interaction.reply("ok");
+  async execute(context, interaction) {
+    await interaction.reply({
+      flags: "Ephemeral",
+      content: "Confirmed."
+    });
   }
 });
 ```
+
+Buttons are matched by `customId`.
 
 ---
 
@@ -237,11 +265,24 @@ export default new SelectMenu({
   customId: "example.select",
   type: "String",
 
-  async execute(ctx, interaction) {
-    await interaction.reply(interaction.values.join(", "));
+  async execute(context, interaction) {
+    await interaction.reply({
+      flags: "Ephemeral",
+      content: interaction.values.join(", ")
+    });
   }
 });
 ```
+
+Supported types:
+
+* `String`
+* `User`
+* `Role`
+* `Mentionable`
+* `Channel`
+
+The `type` field narrows the interaction type.
 
 ---
 
@@ -253,13 +294,15 @@ import { MessageModule } from "@glowland/discord-framework";
 export default new MessageModule({
   trigger: "!ping",
 
-  async execute(ctx, message) {
+  async execute(context, message) {
     await message.reply("pong");
   }
 });
 ```
 
-If `trigger` is missing → runs on every message.
+If `trigger` is omitted, the module runs for every guild message.
+
+Use global message modules carefully.
 
 ---
 
@@ -273,18 +316,20 @@ export default new EventModule({
   once: true,
 
   execute(client) {
-    console.log(client.user.tag);
+    console.log(`Ready as ${client.user.tag}`);
   }
 });
 ```
+
+Event modules map directly to `discord.js` client events.
 
 ---
 
 ## Context
 
-Every manager calls your `createContext`.
+Every manager receives a `createContext` function.
 
-You decide what goes in it.
+The framework does not decide what your context is. You do.
 
 ```ts
 createContext: async (interaction) => ({
@@ -293,73 +338,214 @@ createContext: async (interaction) => ({
 })
 ```
 
-Keep it small.
+Keep it small. Put shared services there.
 
 ---
 
-## Permissions (buttons / selects)
+## Cleaner app-specific aliases
+
+The framework stays generic, but your bot can create nicer local aliases.
 
 ```ts
-export default new Button({
-  customId: "admin",
-  permission: "ManageGuild",
+import {
+  SlashCommand,
+  Button,
+  MessageModule,
+  ContextMenu,
+  SelectMenu,
+  type ContextMenuOptions,
+  type ContextType,
+  type SelectMenuOptions,
+  type SelectType
+} from "@glowland/discord-framework";
+import type { GlowContext } from "./GlowContext.js";
 
-  async execute(ctx, i) {
-    await i.reply("ok");
+export const GlowCommand = SlashCommand<GlowContext>;
+export const GlowButton = Button<GlowContext>;
+export const GlowMessage = MessageModule<GlowContext>;
+
+export class GlowContextMenu<T extends ContextType> extends ContextMenu<GlowContext, T> {
+  constructor(options: ContextMenuOptions<GlowContext, T>) {
+    super(options);
+  }
+}
+
+export class GlowSelectMenu<T extends SelectType> extends SelectMenu<GlowContext, T> {
+  constructor(options: SelectMenuOptions<GlowContext, T>) {
+    super(options);
+  }
+}
+```
+
+Then component files stay clean:
+
+```ts
+import { GlowCommand } from "../../framework/aliases.js";
+
+export default new GlowCommand({
+  name: "ping",
+  description: "Replies with Pong.",
+
+  async execute(context, interaction) {
+    await interaction.reply("Pong.");
   }
 });
 ```
 
-If missing → framework blocks execution and replies.
+This gives you app-specific ergonomics without forcing magic into the framework.
 
 ---
 
-## Reloading
+## Permissions
+
+Buttons, select menus, and context menus support permission checks.
+
+Use `permissionsRequired` when a user must have Discord permissions:
 
 ```ts
-await slash.reloadCommands();
-await contextMenus.reloadContextMenus();
-await buttons.reloadButtons();
-await selects.reloadSelectMenus();
-await messages.reloadMessages();
+export default new Button({
+  customId: "admin.confirm",
+  permissionsRequired: ["ManageGuild"],
+
+  async execute(context, interaction) {
+    await interaction.reply({
+      flags: "Ephemeral",
+      content: "Allowed."
+    });
+  }
+});
 ```
 
-Reload = re-read files, update cache.
+Use `allowedRoleIds` as a bypass:
 
-(No auto re-register.)
+```ts
+export default new Button({
+  customId: "staff.confirm",
+  permissionsRequired: ["ManageGuild"],
+  allowedRoleIds: ["123456789012345678"],
+
+  async execute(context, interaction) {
+    await interaction.reply({
+      flags: "Ephemeral",
+      content: "Allowed."
+    });
+  }
+});
+```
+
+Access rule:
+
+```text
+allowed role OR all required permissions
+```
+
+So a user can run the component if:
+
+* they have one of the allowed roles, or
+* they have every permission listed in `permissionsRequired`
+
+If access fails, the framework replies and does not execute the module.
 
 ---
 
-## Dev-only commands
+## Developer-only commands
+
+Slash commands and context menus can be marked as developer-only.
 
 ```ts
 devOnly: true
 ```
 
-They:
+Developer-only commands:
 
-* register only in `DEVELOPER_GUILD_ID`
-* run only for `DEVELOPERS_IDS`
+* register to `DEVELOPER_GUILD_ID`
+* only run for users listed in `developerIds`
+
+Example manager setup:
+
+```ts
+new SlashCommandManager({
+  client,
+  commandsPath,
+  developerGuildId: process.env.DEVELOPER_GUILD_ID,
+  developerIds: process.env.DEVELOPERS_IDS?.split(",").map((id) => id.trim()) ?? [],
+  createContext
+});
+```
+
+---
+
+## Reloading
+
+Managers include reload methods:
+
+```ts
+await slashCommands.reloadCommands();
+await contextMenus.reloadContextMenus();
+await buttons.reloadButtons();
+await selectMenus.reloadSelectMenus();
+await messages.reloadMessages();
+```
+
+Reloading means:
+
+```text
+clear cache → re-read files → rebuild cache
+```
+
+Reloading slash commands or context menus does **not** automatically re-register with Discord.
+
+After reloading command-like modules, call `registerApplicationCommands` again.
 
 ---
 
 ## Duplicate warnings
 
-If two modules share the same key (name / customId), the framework logs a warning in dev.
+In development, the framework warns when two modules register the same key.
 
-Last one wins.
+Examples:
+
+* same slash command name
+* same context menu `type:name`
+* same button `customId`
+* same select menu `customId`
+
+Last loaded module wins.
+
+---
+
+## Error handling
+
+Each manager accepts an optional `onError` callback.
+
+Example:
+
+```ts
+new ButtonManager({
+  client,
+  buttonsPath,
+  createContext,
+
+  onError: ({ error, item, context, interaction }) => {
+    console.error(`Button failed: ${item.customId}`, error);
+  }
+});
+```
+
+Interaction managers can also send an error reply when execution fails.
 
 ---
 
 ## Design goals
 
-* explicit > implicit
+* explicit over implicit
+* small core
+* strong typing without killing DX
 * framework, not template
-* minimal deps
-* predictable runtime
+* runtime behavior you can trace
+* no hidden service container
+* no forced project structure
 
 ---
 
 ## License
-
-MIT

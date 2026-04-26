@@ -89,13 +89,22 @@ export class ButtonManager<
       const button = this.buttonCache_.get(interaction.customId);
       if (!button) return;
 
-      if (
-        button.permission &&
-        !interaction.memberPermissions.has(button.permission)
-      ) {
+      const hasAllowedRole =
+        button.allowedRoleIds?.some((id) =>
+          interaction.member.roles.cache.has(id),
+        ) ?? false;
+
+      const hasRequiredPermissions =
+        button.permissionsRequired?.every((permission) =>
+          interaction.memberPermissions.has(permission),
+        ) ?? true;
+
+      // allow if either condition passes
+      if (!hasAllowedRole && !hasRequiredPermissions) {
         if (this.permissionReply_ !== false && interaction.isRepliable()) {
           await replyToInteractionError(interaction, this.permissionReply_);
         }
+
         return;
       }
 

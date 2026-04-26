@@ -30,7 +30,8 @@ export interface SelectMenuInteractionMap {
 export interface SelectMenuOptions<TContext, T extends SelectType> {
   customId: string;
   type: T;
-  permission?: keyof typeof PermissionFlagsBits;
+  readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
+  readonly allowedRoleIds?: readonly string[];
   execute(
     context: TContext,
     interaction: SelectMenuInteractionMap[(typeof SelectMenuType)[T]],
@@ -40,13 +41,15 @@ export interface SelectMenuOptions<TContext, T extends SelectType> {
 export class SelectMenu<TContext = unknown, T extends SelectType = SelectType> {
   readonly customId: string;
   readonly type: T;
-  readonly permission: keyof typeof PermissionFlagsBits | undefined;
+  readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
+  readonly allowedRoleIds?: readonly string[];
   readonly execute: SelectMenuOptions<TContext, T>["execute"];
 
   constructor(options: SelectMenuOptions<TContext, T>) {
     this.customId = options.customId;
     this.type = options.type;
-    this.permission = options.permission;
+    this.permissionsRequired = options.permissionsRequired;
+    this.allowedRoleIds = options.allowedRoleIds;
     this.execute = options.execute;
   }
 }

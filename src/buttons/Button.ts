@@ -3,7 +3,8 @@ import type { MaybePromise } from "../core/errors.js";
 
 export interface ButtonOptions<TContext> {
   customId: string;
-  permission?: keyof typeof PermissionFlagsBits;
+  permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
+  allowedRoleIds?: readonly string[];
   execute(
     context: TContext,
     interaction: ButtonInteraction<"cached">,
@@ -12,12 +13,14 @@ export interface ButtonOptions<TContext> {
 
 export class Button<TContext = unknown> {
   readonly customId: string;
-  readonly permission: keyof typeof PermissionFlagsBits | undefined;
+  readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
+  readonly allowedRoleIds?: readonly string[];
   readonly execute: ButtonOptions<TContext>["execute"];
 
   constructor(options: ButtonOptions<TContext>) {
     this.customId = options.customId;
-    this.permission = options.permission;
+    this.permissionsRequired = options.permissionsRequired;
+    this.allowedRoleIds = options.allowedRoleIds;
     this.execute = options.execute;
   }
 }

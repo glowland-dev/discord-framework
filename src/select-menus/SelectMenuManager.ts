@@ -104,10 +104,18 @@ export class SelectMenuManager<
 
       if (interaction.componentType !== SelectMenuType[selectMenu.type]) return;
 
-      if (
-        selectMenu.permission &&
-        !interaction.memberPermissions.has(selectMenu.permission)
-      ) {
+      const hasAllowedRole =
+        selectMenu.allowedRoleIds?.some((id) =>
+          interaction.member.roles.cache.has(id),
+        ) ?? false;
+
+      const hasRequiredPermissions =
+        selectMenu.permissionsRequired?.every((permission) =>
+          interaction.memberPermissions.has(permission),
+        ) ?? true;
+
+      // allow if either condition passes
+      if (!hasAllowedRole && !hasRequiredPermissions) {
         if (this.permissionReply_ !== false && interaction.isRepliable()) {
           await replyToInteractionError(interaction, this.permissionReply_);
         }
