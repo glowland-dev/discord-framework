@@ -2,6 +2,7 @@ export * from "./core/commands.js";
 export * from "./core/errors.js";
 export * from "./core/files.js";
 export * from "./core/duplicates.js";
+export * from "./core/permissions.js";
 
 export * from "./slash/SlashCommandModule.js";
 export * from "./slash/SlashCommandManager.js";

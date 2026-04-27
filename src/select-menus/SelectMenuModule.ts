@@ -8,6 +8,7 @@ import {
   type UserSelectMenuInteraction,
 } from "discord.js";
 import type { MaybePromise } from "../core/errors.js";
+import type { PermissionResolver } from "../core/permissions.js";
 
 export const SelectMenuType = {
   String: ComponentType.StringSelect,
@@ -31,7 +32,10 @@ export interface SelectMenuOptions<TContext, T extends SelectType> {
   customId: string;
   type: T;
   readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
-  readonly allowedRoleIds?: readonly string[];
+  readonly permissionResolver?: PermissionResolver<
+    TContext,
+    SelectMenuInteractionMap[(typeof SelectMenuType)[T]]
+  >;
   execute(
     context: TContext,
     interaction: SelectMenuInteractionMap[(typeof SelectMenuType)[T]],
@@ -45,14 +49,17 @@ export class SelectMenuModule<
   readonly customId: string;
   readonly type: T;
   readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
-  readonly allowedRoleIds?: readonly string[];
+  readonly permissionResolver?: PermissionResolver<
+    TContext,
+    SelectMenuInteractionMap[(typeof SelectMenuType)[T]]
+  >;
   readonly execute: SelectMenuOptions<TContext, T>["execute"];
 
   constructor(options: SelectMenuOptions<TContext, T>) {
     this.customId = options.customId;
     this.type = options.type;
     this.permissionsRequired = options.permissionsRequired;
-    this.allowedRoleIds = options.allowedRoleIds;
+    this.permissionResolver = options.permissionResolver;
     this.execute = options.execute;
   }
 }

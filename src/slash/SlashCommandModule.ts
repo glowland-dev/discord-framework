@@ -5,11 +5,16 @@ import {
   type ChatInputCommandInteraction,
 } from "discord.js";
 import type { MaybePromise } from "../core/errors.js";
+import type { PermissionResolver } from "../core/permissions.js";
 
 export interface SlashCommandOptions<
   TContext,
 > extends ChatInputApplicationCommandData {
   devOnly?: boolean;
+  permissionResolver?: PermissionResolver<
+    TContext,
+    ChatInputCommandInteraction<"cached">
+  >;
   execute(
     context: TContext,
     interaction: ChatInputCommandInteraction<"cached">,
@@ -21,6 +26,10 @@ export class SlashCommandModule<TContext = unknown> {
   readonly description: string;
   readonly options: readonly ApplicationCommandOptionData[] | undefined;
   readonly devOnly: boolean;
+  readonly permissionResolver?: PermissionResolver<
+    TContext,
+    ChatInputCommandInteraction<"cached">
+  >;
   readonly execute: SlashCommandOptions<TContext>["execute"];
   readonly type = ApplicationCommandType.ChatInput;
 
@@ -29,6 +38,7 @@ export class SlashCommandModule<TContext = unknown> {
     this.description = options.description;
     this.options = options.options;
     this.devOnly = options.devOnly ?? false;
+    this.permissionResolver = options.permissionResolver;
     this.execute = options.execute;
   }
 

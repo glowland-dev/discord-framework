@@ -30,6 +30,7 @@ export interface SlashCommandManagerOptions<
       ChatInputCommandInteraction<"cached">
     >,
   ) => MaybePromise<void>;
+  permissionReply?: InteractionReplyOptions | false;
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -44,6 +45,7 @@ export class SlashCommandManager<
   private readonly developerIds_: readonly string[];
   private readonly createContext_: SlashCommandManagerOptions<TContext>["createContext"];
   private readonly onError_: SlashCommandManagerOptions<TContext>["onError"];
+  private readonly permissionReply_: InteractionReplyOptions | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
 
@@ -63,6 +65,10 @@ export class SlashCommandManager<
     this.developerIds_ = options.developerIds ?? [];
     this.createContext_ = options.createContext;
     this.onError_ = options.onError;
+    this.permissionReply_ = options.permissionReply ?? {
+      flags: "Ephemeral",
+      content: "You don't have permission to use this command.",
+    };
     this.errorReply_ = options.errorReply ?? {
       flags: "Ephemeral",
       content: "An error occurred while executing this command.",
@@ -119,6 +125,19 @@ export class SlashCommandManager<
 
       try {
         context = await this.createContext_(interaction);
+
+        const hasResolvedPermission = command.permissionResolver
+          ? await command.permissionResolver(context, interaction)
+          : true;
+
+        if (!hasResolvedPermission) {
+          if (this.permissionReply_ !== false && interaction.isRepliable()) {
+            await replyToInteractionError(interaction, this.permissionReply_);
+          }
+
+          return;
+        }
+
         await command.execute(context, interaction);
       } catch (error) {
         await this.onError_?.({ error, item: command, context, interaction });

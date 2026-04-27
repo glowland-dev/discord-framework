@@ -8,6 +8,7 @@ import {
 } from "discord.js";
 
 import type { MaybePromise } from "../core/errors.js";
+import type { PermissionResolver } from "../core/permissions.js";
 
 export const ContextMenuType = {
   User: ApplicationCommandType.User,
@@ -31,7 +32,10 @@ export interface ContextMenuOptions<TContext, T extends ContextType> {
   type: T;
   devOnly?: boolean;
   permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
-  allowedRoleIds?: readonly string[];
+  permissionResolver?: PermissionResolver<
+    TContext,
+    ContextMenuInteractionMap[(typeof ContextMenuType)[T]]
+  >;
   execute(
     context: TContext,
     interaction: ContextMenuInteractionMap[(typeof ContextMenuType)[T]],
@@ -46,7 +50,10 @@ export class ContextMenuModule<
   readonly type: T;
   readonly devOnly: boolean;
   readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
-  readonly allowedRoleIds?: readonly string[];
+  readonly permissionResolver?: PermissionResolver<
+    TContext,
+    ContextMenuInteractionMap[(typeof ContextMenuType)[T]]
+  >;
   readonly execute: ContextMenuOptions<TContext, T>["execute"];
 
   constructor(options: ContextMenuOptions<TContext, T>) {
@@ -54,7 +61,7 @@ export class ContextMenuModule<
     this.type = options.type;
     this.devOnly = options.devOnly ?? false;
     this.permissionsRequired = options.permissionsRequired;
-    this.allowedRoleIds = options.allowedRoleIds;
+    this.permissionResolver = options.permissionResolver;
     this.execute = options.execute;
   }
 

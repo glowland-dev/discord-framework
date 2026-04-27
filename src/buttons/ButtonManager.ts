@@ -90,29 +90,28 @@ export class ButtonManager<
       const button = this.buttonCache_.get(interaction.customId);
       if (!button) return;
 
-      const hasAllowedRole =
-        button.allowedRoleIds?.some((id) =>
-          interaction.member.roles.cache.has(id),
-        ) ?? false;
-
-      const hasRequiredPermissions =
-        button.permissionsRequired?.every((permission) =>
-          interaction.memberPermissions.has(permission),
-        ) ?? true;
-
-      // allow if either condition passes
-      if (!hasAllowedRole && !hasRequiredPermissions) {
-        if (this.permissionReply_ !== false && interaction.isRepliable()) {
-          await replyToInteractionError(interaction, this.permissionReply_);
-        }
-
-        return;
-      }
-
       let context: TContext | undefined;
 
       try {
         context = await this.createContext_(interaction);
+
+        const hasRequiredPermissions =
+          button.permissionsRequired?.every((permission) =>
+            interaction.memberPermissions.has(permission),
+          ) ?? true;
+
+        const hasResolvedPermission = button.permissionResolver
+          ? await button.permissionResolver(context, interaction)
+          : hasRequiredPermissions;
+
+        if (!hasResolvedPermission) {
+          if (this.permissionReply_ !== false && interaction.isRepliable()) {
+            await replyToInteractionError(interaction, this.permissionReply_);
+          }
+
+          return;
+        }
+
         await button.execute(context, interaction);
       } catch (error) {
         await this.onError_?.({ error, item: button, context, interaction });

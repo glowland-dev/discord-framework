@@ -76,7 +76,7 @@ export class ContextMenuManager<
     this.onError_ = options.onError;
     this.permissionReply_ = options.permissionReply ?? {
       flags: "Ephemeral",
-      content: "You don't have permission to use this button.",
+      content: "You don't have permission to use this context menu.",
     };
     this.errorReply_ = options.errorReply ?? {
       flags: "Ephemeral",
@@ -143,29 +143,28 @@ export class ContextMenuManager<
         if (!isDeveloper || !isDeveloperGuild) return;
       }
 
-      const hasAllowedRole =
-        contextMenu.allowedRoleIds?.some((id) =>
-          interaction.member.roles.cache.has(id),
-        ) ?? false;
-
-      const hasRequiredPermissions =
-        contextMenu.permissionsRequired?.every((permission) =>
-          interaction.memberPermissions.has(permission),
-        ) ?? true;
-
-      // allow if either condition passes
-      if (!hasAllowedRole && !hasRequiredPermissions) {
-        if (this.permissionReply_ !== false && interaction.isRepliable()) {
-          await replyToInteractionError(interaction, this.permissionReply_);
-        }
-
-        return;
-      }
-
       let context: TContext | undefined;
 
       try {
         context = await this.createContext_(interaction);
+
+        const hasRequiredPermissions =
+          contextMenu.permissionsRequired?.every((permission) =>
+            interaction.memberPermissions.has(permission),
+          ) ?? true;
+
+        const hasResolvedPermission = contextMenu.permissionResolver
+          ? await contextMenu.permissionResolver(context, interaction as never)
+          : hasRequiredPermissions;
+
+        if (!hasResolvedPermission) {
+          if (this.permissionReply_ !== false && interaction.isRepliable()) {
+            await replyToInteractionError(interaction, this.permissionReply_);
+          }
+
+          return;
+        }
+
         await contextMenu.execute(context, interaction as never);
       } catch (error) {
         await this.onError_?.({

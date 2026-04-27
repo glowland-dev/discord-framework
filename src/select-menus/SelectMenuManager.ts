@@ -108,29 +108,28 @@ export class SelectMenuManager<
 
       if (interaction.componentType !== SelectMenuType[selectMenu.type]) return;
 
-      const hasAllowedRole =
-        selectMenu.allowedRoleIds?.some((id) =>
-          interaction.member.roles.cache.has(id),
-        ) ?? false;
-
-      const hasRequiredPermissions =
-        selectMenu.permissionsRequired?.every((permission) =>
-          interaction.memberPermissions.has(permission),
-        ) ?? true;
-
-      // allow if either condition passes
-      if (!hasAllowedRole && !hasRequiredPermissions) {
-        if (this.permissionReply_ !== false && interaction.isRepliable()) {
-          await replyToInteractionError(interaction, this.permissionReply_);
-        }
-
-        return;
-      }
-
       let context: TContext | undefined;
 
       try {
         context = await this.createContext_(interaction);
+
+        const hasRequiredPermissions =
+          selectMenu.permissionsRequired?.every((permission) =>
+            interaction.memberPermissions.has(permission),
+          ) ?? true;
+
+        const hasResolvedPermission = selectMenu.permissionResolver
+          ? await selectMenu.permissionResolver(context, interaction as never)
+          : hasRequiredPermissions;
+
+        if (!hasResolvedPermission) {
+          if (this.permissionReply_ !== false && interaction.isRepliable()) {
+            await replyToInteractionError(interaction, this.permissionReply_);
+          }
+
+          return;
+        }
+
         await selectMenu.execute(context, interaction as never);
       } catch (error) {
         await this.onError_?.({
