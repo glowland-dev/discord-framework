@@ -14,8 +14,11 @@ import { ButtonModule } from "./ButtonModule.js";
 import { loadDefaultModules } from "../core/files.js";
 import { warnDuplicate } from "../core/duplicates.js";
 
-export interface ButtonManagerOptions<TContext> {
-  client: Client<true>;
+export interface ButtonManagerOptions<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  client: TClient;
   buttonsPath: string;
   createContext: (
     interaction: ButtonInteraction<"cached">,
@@ -32,8 +35,11 @@ export interface ButtonManagerOptions<TContext> {
   cacheBust?: boolean;
 }
 
-export class ButtonManager<TContext> {
-  private readonly client_: Client<true>;
+export class ButtonManager<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  private readonly client_: TClient;
   private readonly buttonsPath_: string;
   private readonly createContext_: ButtonManagerOptions<TContext>["createContext"];
   private readonly onError_: ButtonManagerOptions<TContext>["onError"];
@@ -42,7 +48,7 @@ export class ButtonManager<TContext> {
   private readonly cacheBust_: boolean;
   private readonly buttonCache_ = new Map<string, ButtonModule<TContext>>();
 
-  constructor(options: ButtonManagerOptions<TContext>) {
+  constructor(options: ButtonManagerOptions<TContext, TClient>) {
     this.client_ = options.client;
     this.buttonsPath_ = options.buttonsPath;
     this.createContext_ = options.createContext;

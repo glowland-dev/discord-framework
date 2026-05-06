@@ -5,7 +5,6 @@ import type {
 } from "discord.js";
 
 import {
-  replyToInteractionError,
   type FrameworkErrorPayload,
   type MaybePromise,
 } from "../core/errors.js";
@@ -14,8 +13,11 @@ import { warnDuplicate } from "../core/duplicates.js";
 import { loadDefaultModules } from "../core/files.js";
 import { AutocompleteModule } from "./AutocompleteModule.js";
 
-export interface AutocompleteManagerOptions<TContext> {
-  client: Client<true>;
+export interface AutocompleteManagerOptions<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  client: TClient;
   autocompletesPath: string;
   createContext: (
     interaction: AutocompleteInteraction<"cached">,
@@ -32,8 +34,11 @@ export interface AutocompleteManagerOptions<TContext> {
   cacheBust?: boolean;
 }
 
-export class AutocompleteManager<TContext> {
-  private readonly client_: Client<true>;
+export class AutocompleteManager<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  private readonly client_: TClient;
   private readonly autocompletesPath_: string;
   private readonly createContext_: AutocompleteManagerOptions<TContext>["createContext"];
   private readonly onError_: AutocompleteManagerOptions<TContext>["onError"];
@@ -46,7 +51,7 @@ export class AutocompleteManager<TContext> {
     AutocompleteModule<TContext>
   >();
 
-  constructor(options: AutocompleteManagerOptions<TContext>) {
+  constructor(options: AutocompleteManagerOptions<TContext, TClient>) {
     this.client_ = options.client;
     this.autocompletesPath_ = options.autocompletesPath;
     this.createContext_ = options.createContext;
