@@ -1,6 +1,6 @@
 {
   "name": "@glowland/discord-framework",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Small typed framework for loading and dispatching discord.js modules.",
   "type": "module",
   "main": "./dist/index.js",
