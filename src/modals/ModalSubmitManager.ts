@@ -14,8 +14,11 @@ import { loadDefaultModules } from "../core/files.js";
 import { warnDuplicate } from "../core/duplicates.js";
 import { ModalSubmitModule } from "./ModalSubmitModule.js";
 
-export interface ModalSubmitManagerOptions<TContext> {
-  client: Client<true>;
+export interface ModalSubmitManagerOptions<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  client: TClient;
   modalsPath: string;
   createContext: (
     interaction: ModalSubmitInteraction<"cached">,
@@ -32,8 +35,11 @@ export interface ModalSubmitManagerOptions<TContext> {
   cacheBust?: boolean;
 }
 
-export class ModalSubmitManager<TContext> {
-  private readonly client_: Client<true>;
+export class ModalSubmitManager<
+  TContext,
+  TClient extends Client<true> = Client<true>,
+> {
+  private readonly client_: TClient;
   private readonly modalsPath_: string;
   private readonly createContext_: ModalSubmitManagerOptions<TContext>["createContext"];
   private readonly onError_: ModalSubmitManagerOptions<TContext>["onError"];
@@ -42,7 +48,7 @@ export class ModalSubmitManager<TContext> {
   private readonly cacheBust_: boolean;
   private readonly modalCache_ = new Map<string, ModalSubmitModule<TContext>>();
 
-  constructor(options: ModalSubmitManagerOptions<TContext>) {
+  constructor(options: ModalSubmitManagerOptions<TContext, TClient>) {
     this.client_ = options.client;
     this.modalsPath_ = options.modalsPath;
     this.createContext_ = options.createContext;
