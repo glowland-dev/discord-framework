@@ -165,7 +165,7 @@ export class ContextMenuManager<
           return;
         }
 
-        await contextMenu.execute(context, interaction as never);
+        await contextMenu.onTrigger(context, interaction as never);
       } catch (error) {
         await this.onError_?.({
           error,

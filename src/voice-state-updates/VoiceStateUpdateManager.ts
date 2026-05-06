@@ -68,7 +68,7 @@ export class VoiceStateUpdateManager<
 
       for (const module of this.voiceStateUpdateCache_) {
         try {
-          await module.execute(context, oldState, newState);
+          await module.onTrigger(context, oldState, newState);
         } catch (error) {
           await this.onError_?.({
             error,

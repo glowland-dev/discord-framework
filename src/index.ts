@@ -4,11 +4,20 @@ export * from "./core/files.js";
 export * from "./core/duplicates.js";
 export * from "./core/permissions.js";
 
+export * from "./autocompletes/AutocompleteModule.js";
+export * from "./autocompletes/AutocompleteManager.js";
+
 export * from "./slash/SlashCommandModule.js";
 export * from "./slash/SlashCommandManager.js";
 
+export * from "./context-menus/ContextMenuModule.js";
+export * from "./context-menus/ContextMenuManager.js";
+
 export * from "./buttons/ButtonModule.js";
 export * from "./buttons/ButtonManager.js";
+
+export * from "./modals/ModalSubmitModule.js";
+export * from "./modals/ModalSubmitManager.js";
 
 export * from "./select-menus/SelectMenuModule.js";
 export * from "./select-menus/SelectMenuManager.js";
@@ -16,11 +25,8 @@ export * from "./select-menus/SelectMenuManager.js";
 export * from "./messages/MessageModule.js";
 export * from "./messages/MessageManager.js";
 
-export * from "./events/EventModule.js";
-export * from "./events/EventManager.js";
-
-export * from "./context-menus/ContextMenuModule.js";
-export * from "./context-menus/ContextMenuManager.js";
-
 export * from "./voice-state-updates/VoiceStateUpdateModule.js";
 export * from "./voice-state-updates/VoiceStateUpdateManager.js";
+
+export * from "./events/EventModule.js";
+export * from "./events/EventManager.js";

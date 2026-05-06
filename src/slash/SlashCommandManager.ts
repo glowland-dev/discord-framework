@@ -138,7 +138,7 @@ export class SlashCommandManager<
           return;
         }
 
-        await command.execute(context, interaction);
+        await command.onTrigger(context, interaction);
       } catch (error) {
         await this.onError_?.({ error, item: command, context, interaction });
         if (this.errorReply_ !== false && interaction.isRepliable()) {

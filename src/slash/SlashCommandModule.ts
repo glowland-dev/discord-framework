@@ -15,7 +15,7 @@ export interface SlashCommandOptions<
     TContext,
     ChatInputCommandInteraction<"cached">
   >;
-  execute(
+  onTrigger(
     context: TContext,
     interaction: ChatInputCommandInteraction<"cached">,
   ): MaybePromise<void>;
@@ -30,7 +30,7 @@ export class SlashCommandModule<TContext = unknown> {
     TContext,
     ChatInputCommandInteraction<"cached">
   >;
-  readonly execute: SlashCommandOptions<TContext>["execute"];
+  readonly onTrigger: SlashCommandOptions<TContext>["onTrigger"];
   readonly type = ApplicationCommandType.ChatInput;
 
   constructor(options: SlashCommandOptions<TContext>) {
@@ -39,7 +39,7 @@ export class SlashCommandModule<TContext = unknown> {
     this.options = options.options;
     this.devOnly = options.devOnly ?? false;
     this.permissionResolver = options.permissionResolver;
-    this.execute = options.execute;
+    this.onTrigger = options.onTrigger;
   }
 
   toJSON(): ChatInputApplicationCommandData {

@@ -130,7 +130,7 @@ export class SelectMenuManager<
           return;
         }
 
-        await selectMenu.execute(context, interaction as never);
+        await selectMenu.onTrigger(context, interaction as never);
       } catch (error) {
         await this.onError_?.({
           error,

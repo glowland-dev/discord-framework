@@ -36,7 +36,7 @@ export interface ContextMenuOptions<TContext, T extends ContextType> {
     TContext,
     ContextMenuInteractionMap[(typeof ContextMenuType)[T]]
   >;
-  execute(
+  onTrigger(
     context: TContext,
     interaction: ContextMenuInteractionMap[(typeof ContextMenuType)[T]],
   ): MaybePromise<void>;
@@ -54,7 +54,7 @@ export class ContextMenuModule<
     TContext,
     ContextMenuInteractionMap[(typeof ContextMenuType)[T]]
   >;
-  readonly execute: ContextMenuOptions<TContext, T>["execute"];
+  readonly onTrigger: ContextMenuOptions<TContext, T>["onTrigger"];
 
   constructor(options: ContextMenuOptions<TContext, T>) {
     this.name = options.name;
@@ -62,7 +62,7 @@ export class ContextMenuModule<
     this.devOnly = options.devOnly ?? false;
     this.permissionsRequired = options.permissionsRequired;
     this.permissionResolver = options.permissionResolver;
-    this.execute = options.execute;
+    this.onTrigger = options.onTrigger;
   }
 
   toJSON(): ContextMenuApplicationCommandDataMap[(typeof ContextMenuType)[T]] {

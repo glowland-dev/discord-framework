@@ -36,7 +36,7 @@ export interface SelectMenuOptions<TContext, T extends SelectType> {
     TContext,
     SelectMenuInteractionMap[(typeof SelectMenuType)[T]]
   >;
-  execute(
+  onTrigger(
     context: TContext,
     interaction: SelectMenuInteractionMap[(typeof SelectMenuType)[T]],
   ): MaybePromise<void>;
@@ -53,13 +53,13 @@ export class SelectMenuModule<
     TContext,
     SelectMenuInteractionMap[(typeof SelectMenuType)[T]]
   >;
-  readonly execute: SelectMenuOptions<TContext, T>["execute"];
+  readonly onTrigger: SelectMenuOptions<TContext, T>["onTrigger"];
 
   constructor(options: SelectMenuOptions<TContext, T>) {
     this.customId = options.customId;
     this.type = options.type;
     this.permissionsRequired = options.permissionsRequired;
     this.permissionResolver = options.permissionResolver;
-    this.execute = options.execute;
+    this.onTrigger = options.onTrigger;
   }
 }

@@ -60,9 +60,9 @@ export class EventManager<
         typeof value === "object" &&
         value !== null &&
         "name" in value &&
-        "execute" in value &&
+        "onTrigger" in value &&
         typeof (value as any).name === "string" &&
-        typeof (value as any).execute === "function",
+        typeof (value as any).onTrigger === "function",
     });
   }
 
@@ -98,7 +98,7 @@ export class EventManager<
 
         try {
           context = await this.createContext_(event.name, args);
-          await event.execute(context, ...(args as never));
+          await event.onTrigger(context, ...(args as never));
         } catch (error) {
           try {
             await this.onError_?.({

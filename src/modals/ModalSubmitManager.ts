@@ -1,7 +1,7 @@
 import type {
-  ButtonInteraction,
   Client,
   InteractionReplyOptions,
+  ModalSubmitInteraction,
 } from "discord.js";
 
 import {
@@ -10,21 +10,21 @@ import {
   type MaybePromise,
 } from "../core/errors.js";
 
-import { ButtonModule } from "./ButtonModule.js";
 import { loadDefaultModules } from "../core/files.js";
 import { warnDuplicate } from "../core/duplicates.js";
+import { ModalSubmitModule } from "./ModalSubmitModule.js";
 
-export interface ButtonManagerOptions<TContext> {
+export interface ModalSubmitManagerOptions<TContext> {
   client: Client<true>;
-  buttonsPath: string;
+  modalsPath: string;
   createContext: (
-    interaction: ButtonInteraction<"cached">,
+    interaction: ModalSubmitInteraction<"cached">,
   ) => MaybePromise<TContext>;
   onError?: (
     payload: FrameworkErrorPayload<
-      ButtonModule<TContext>,
+      ModalSubmitModule<TContext>,
       TContext,
-      ButtonInteraction<"cached">
+      ModalSubmitInteraction<"cached">
     >,
   ) => MaybePromise<void>;
   permissionReply?: InteractionReplyOptions | false;
@@ -32,59 +32,59 @@ export interface ButtonManagerOptions<TContext> {
   cacheBust?: boolean;
 }
 
-export class ButtonManager<TContext> {
+export class ModalSubmitManager<TContext> {
   private readonly client_: Client<true>;
-  private readonly buttonsPath_: string;
-  private readonly createContext_: ButtonManagerOptions<TContext>["createContext"];
-  private readonly onError_: ButtonManagerOptions<TContext>["onError"];
+  private readonly modalsPath_: string;
+  private readonly createContext_: ModalSubmitManagerOptions<TContext>["createContext"];
+  private readonly onError_: ModalSubmitManagerOptions<TContext>["onError"];
   private readonly permissionReply_: InteractionReplyOptions | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
-  private readonly buttonCache_ = new Map<string, ButtonModule<TContext>>();
+  private readonly modalCache_ = new Map<string, ModalSubmitModule<TContext>>();
 
-  constructor(options: ButtonManagerOptions<TContext>) {
+  constructor(options: ModalSubmitManagerOptions<TContext>) {
     this.client_ = options.client;
-    this.buttonsPath_ = options.buttonsPath;
+    this.modalsPath_ = options.modalsPath;
     this.createContext_ = options.createContext;
     this.onError_ = options.onError;
     this.permissionReply_ = options.permissionReply ?? {
       flags: "Ephemeral",
-      content: "You don't have permission to use this button.",
+      content: "You don't have permission to use this modal.",
     };
     this.errorReply_ = options.errorReply ?? {
       flags: "Ephemeral",
-      content: "An error occurred while executing this button.",
+      content: "An error occurred while executing this modal.",
     };
     this.cacheBust_ = options.cacheBust ?? true;
   }
 
-  get buttonCache(): ReadonlyMap<string, ButtonModule<TContext>> {
-    return this.buttonCache_;
+  get modalCache(): ReadonlyMap<string, ModalSubmitModule<TContext>> {
+    return this.modalCache_;
   }
 
-  async loadButtons(): Promise<void> {
-    const buttons = await loadDefaultModules<ButtonModule<TContext>>({
-      directory: this.buttonsPath_,
+  async loadModals(): Promise<void> {
+    const modals = await loadDefaultModules<ModalSubmitModule<TContext>>({
+      directory: this.modalsPath_,
       cacheBust: this.cacheBust_,
-      validate: (value): value is ButtonModule<TContext> =>
-        value instanceof ButtonModule,
+      validate: (value): value is ModalSubmitModule<TContext> =>
+        value instanceof ModalSubmitModule,
     });
 
-    for (const button of buttons) {
-      if (this.buttonCache_.has(button.customId)) {
-        warnDuplicate("ButtonManager", button.customId);
+    for (const modal of modals) {
+      if (this.modalCache_.has(modal.customId)) {
+        warnDuplicate("ModalSubmitManager", modal.customId);
       }
 
-      this.buttonCache_.set(button.customId, button);
+      this.modalCache_.set(modal.customId, modal);
     }
   }
 
   listen(): void {
     this.client_.on("interactionCreate", async (interaction) => {
-      if (!interaction.isButton() || !interaction.inCachedGuild()) return;
+      if (!interaction.isModalSubmit() || !interaction.inCachedGuild()) return;
 
-      const button = this.buttonCache_.get(interaction.customId);
-      if (!button) return;
+      const modal = this.modalCache_.get(interaction.customId);
+      if (!modal) return;
 
       let context: TContext | undefined;
 
@@ -92,12 +92,12 @@ export class ButtonManager<TContext> {
         context = await this.createContext_(interaction);
 
         const hasRequiredPermissions =
-          button.permissionsRequired?.every((permission) =>
+          modal.permissionsRequired?.every((permission) =>
             interaction.memberPermissions.has(permission),
           ) ?? true;
 
-        const hasResolvedPermission = button.permissionResolver
-          ? await button.permissionResolver(context, interaction)
+        const hasResolvedPermission = modal.permissionResolver
+          ? await modal.permissionResolver(context, interaction)
           : hasRequiredPermissions;
 
         if (!hasResolvedPermission) {
@@ -108,9 +108,9 @@ export class ButtonManager<TContext> {
           return;
         }
 
-        await button.onTrigger(context, interaction);
+        await modal.onTrigger(context, interaction);
       } catch (error) {
-        await this.onError_?.({ error, item: button, context, interaction });
+        await this.onError_?.({ error, item: modal, context, interaction });
         if (this.errorReply_ !== false && interaction.isRepliable()) {
           await replyToInteractionError(interaction, this.errorReply_);
         }
@@ -118,8 +118,8 @@ export class ButtonManager<TContext> {
     });
   }
 
-  async reloadButtons(): Promise<void> {
-    this.buttonCache_.clear();
-    await this.loadButtons();
+  async reloadModals(): Promise<void> {
+    this.modalCache_.clear();
+    await this.loadModals();
   }
 }

@@ -69,7 +69,7 @@ export class MessageManager<
       for (const module of this.messageCache_) {
         try {
           if (module.trigger && firstWord !== module.trigger) continue;
-          await module.execute(context, message);
+          await module.onTrigger(context, message);
         } catch (error) {
           await this.onError_?.({
             error,

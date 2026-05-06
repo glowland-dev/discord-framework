@@ -2,7 +2,7 @@ import type { VoiceState } from "discord.js";
 import type { MaybePromise } from "../core/errors.js";
 
 export interface VoiceStateUpdateModuleOptions<TContext> {
-  execute(
+  onTrigger(
     context: TContext,
     oldState: VoiceState,
     newState: VoiceState,
@@ -10,9 +10,9 @@ export interface VoiceStateUpdateModuleOptions<TContext> {
 }
 
 export class VoiceStateUpdateModule<TContext = unknown> {
-  readonly execute: VoiceStateUpdateModuleOptions<TContext>["execute"];
+  readonly onTrigger: VoiceStateUpdateModuleOptions<TContext>["onTrigger"];
 
   constructor(options: VoiceStateUpdateModuleOptions<TContext>) {
-    this.execute = options.execute;
+    this.onTrigger = options.onTrigger;
   }
 }
