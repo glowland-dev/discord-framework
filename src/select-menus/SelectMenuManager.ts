@@ -1,7 +1,9 @@
-import {
-  type AnySelectMenuInteraction,
-  type Client,
-  type InteractionReplyOptions,
+import type {
+  APIInteractionGuildMember,
+  GuildMember,
+  AnySelectMenuInteraction,
+  Client,
+  InteractionReplyOptions,
 } from "discord.js";
 
 import {
@@ -36,7 +38,12 @@ export interface SelectMenuManagerOptions<
       AnySelectMenuInteraction<"cached">
     >,
   ) => MaybePromise<void>;
-  permissionReply?: InteractionReplyOptions | false;
+  permissionReply?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -49,7 +56,12 @@ export class SelectMenuManager<
   private readonly selectMenusPath_: string;
   private readonly createContext_: SelectMenuManagerOptions<TContext>["createContext"];
   private readonly onError_: SelectMenuManagerOptions<TContext>["onError"];
-  private readonly permissionReply_: InteractionReplyOptions | false;
+  private readonly permissionReply_?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
 

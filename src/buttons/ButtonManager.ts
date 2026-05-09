@@ -1,6 +1,8 @@
 import type {
+  APIInteractionGuildMember,
   ButtonInteraction,
   Client,
+  GuildMember,
   InteractionReplyOptions,
 } from "discord.js";
 
@@ -30,7 +32,12 @@ export interface ButtonManagerOptions<
       ButtonInteraction<"cached">
     >,
   ) => MaybePromise<void>;
-  permissionReply?: InteractionReplyOptions | false;
+  permissionReply?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -43,7 +50,12 @@ export class ButtonManager<
   private readonly buttonsPath_: string;
   private readonly createContext_: ButtonManagerOptions<TContext>["createContext"];
   private readonly onError_: ButtonManagerOptions<TContext>["onError"];
-  private readonly permissionReply_: InteractionReplyOptions | false;
+  private readonly permissionReply_?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
   private readonly buttonCache_ = new Map<string, ButtonModule<TContext>>();

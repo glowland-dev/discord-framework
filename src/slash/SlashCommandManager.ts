@@ -1,13 +1,17 @@
 import type {
+  APIInteractionGuildMember,
   ChatInputCommandInteraction,
   Client,
+  GuildMember,
   InteractionReplyOptions,
 } from "discord.js";
+
 import {
   replyToInteractionError,
   type FrameworkErrorPayload,
   type MaybePromise,
 } from "../core/errors.js";
+
 import { loadDefaultModules } from "../core/files.js";
 import { SlashCommandModule } from "./SlashCommandModule.js";
 import { warnDuplicate } from "../core/duplicates.js";
@@ -30,7 +34,12 @@ export interface SlashCommandManagerOptions<
       ChatInputCommandInteraction<"cached">
     >,
   ) => MaybePromise<void>;
-  permissionReply?: InteractionReplyOptions | false;
+  permissionReply?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -45,7 +54,12 @@ export class SlashCommandManager<
   private readonly developerIds_: readonly string[];
   private readonly createContext_: SlashCommandManagerOptions<TContext>["createContext"];
   private readonly onError_: SlashCommandManagerOptions<TContext>["onError"];
-  private readonly permissionReply_: InteractionReplyOptions | false;
+  private readonly permissionReply_?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
 

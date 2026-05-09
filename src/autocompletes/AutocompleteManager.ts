@@ -1,6 +1,8 @@
 import type {
+  APIInteractionGuildMember,
   AutocompleteInteraction,
   Client,
+  GuildMember,
   InteractionReplyOptions,
 } from "discord.js";
 
@@ -29,7 +31,14 @@ export interface AutocompleteManagerOptions<
       AutocompleteInteraction<"cached">
     >,
   ) => MaybePromise<void>;
-  permissionReply?: InteractionReplyOptions | false;
+
+  permissionReply?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
+
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -42,7 +51,14 @@ export class AutocompleteManager<
   private readonly autocompletesPath_: string;
   private readonly createContext_: AutocompleteManagerOptions<TContext>["createContext"];
   private readonly onError_: AutocompleteManagerOptions<TContext>["onError"];
-  private readonly permissionReply_: InteractionReplyOptions | false;
+
+  private readonly permissionReply_?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
+
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
 

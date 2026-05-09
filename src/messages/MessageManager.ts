@@ -10,7 +10,7 @@ export interface MessageManagerOptions<
   TContext,
   TClient extends Client<true> = Client<true>,
 > {
-  client: Client<true>;
+  client: TClient;
   messagesPath: string;
   createContext: (message: Message<true>) => MaybePromise<TContext>;
   onError?: (
@@ -28,7 +28,7 @@ export class MessageManager<
   TContext,
   TClient extends Client<true> = Client<true>,
 > {
-  private readonly client_: Client<true>;
+  private readonly client_: TClient;
   private readonly messagesPath_: string;
   private readonly createContext_: MessageManagerOptions<TContext>["createContext"];
   private readonly onError_: MessageManagerOptions<TContext>["onError"];
@@ -36,7 +36,7 @@ export class MessageManager<
   private readonly cacheBust_: boolean;
   private messageCache_: MessageModule<TContext>[] = [];
 
-  constructor(options: MessageManagerOptions<TContext>) {
+  constructor(options: MessageManagerOptions<TContext, TClient>) {
     this.client_ = options.client;
     this.messagesPath_ = options.messagesPath;
     this.createContext_ = options.createContext;

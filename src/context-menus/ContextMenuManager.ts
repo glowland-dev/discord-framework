@@ -1,5 +1,7 @@
 import {
   ApplicationCommandType,
+  type APIInteractionGuildMember,
+  type GuildMember,
   type Client,
   type ContextMenuCommandInteraction,
   type InteractionReplyOptions,
@@ -39,7 +41,12 @@ export interface ContextMenuManagerOptions<
       ContextMenuCommandInteraction<"cached">
     >,
   ) => MaybePromise<void>;
-  permissionReply?: InteractionReplyOptions | false;
+  permissionReply?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -54,7 +61,12 @@ export class ContextMenuManager<
   private readonly developerIds_: readonly string[];
   private readonly createContext_: ContextMenuManagerOptions<TContext>["createContext"];
   private readonly onError_: ContextMenuManagerOptions<TContext>["onError"];
-  private readonly permissionReply_: InteractionReplyOptions | false;
+  private readonly permissionReply_?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
 

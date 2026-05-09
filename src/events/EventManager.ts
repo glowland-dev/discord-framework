@@ -1,9 +1,7 @@
 import type { Client, ClientEvents } from "discord.js";
-import {
-  type FrameworkErrorPayload,
-  type MaybePromise,
-} from "../core/errors.js";
-import { EventModule } from "./EventModule.js";
+
+import type { FrameworkErrorPayload, MaybePromise } from "../core/errors.js";
+import type { EventModule } from "./EventModule.js";
 import { loadDefaultModules } from "../core/files.js";
 
 type AnyEventModule<TContext> = EventModule<TContext, keyof ClientEvents>;

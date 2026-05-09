@@ -1,5 +1,7 @@
 import type {
+  APIInteractionGuildMember,
   Client,
+  GuildMember,
   InteractionReplyOptions,
   ModalSubmitInteraction,
 } from "discord.js";
@@ -30,7 +32,12 @@ export interface ModalSubmitManagerOptions<
       ModalSubmitInteraction<"cached">
     >,
   ) => MaybePromise<void>;
-  permissionReply?: InteractionReplyOptions | false;
+  permissionReply?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   errorReply?: InteractionReplyOptions | false;
   cacheBust?: boolean;
 }
@@ -43,7 +50,12 @@ export class ModalSubmitManager<
   private readonly modalsPath_: string;
   private readonly createContext_: ModalSubmitManagerOptions<TContext>["createContext"];
   private readonly onError_: ModalSubmitManagerOptions<TContext>["onError"];
-  private readonly permissionReply_: InteractionReplyOptions | false;
+  private readonly permissionReply_?:
+    | ((interaction: {
+        member: GuildMember | APIInteractionGuildMember | null;
+      }) => InteractionReplyOptions)
+    | InteractionReplyOptions
+    | false;
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
   private readonly modalCache_ = new Map<string, ModalSubmitModule<TContext>>();

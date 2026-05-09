@@ -1,10 +1,12 @@
 // voice-state-updates/VoiceStateUpdateManager.ts
 
 import type { Client, VoiceState } from "discord.js";
+
 import {
   type FrameworkErrorPayload,
   type MaybePromise,
 } from "../core/errors.js";
+
 import { loadDefaultModules } from "../core/files.js";
 import { VoiceStateUpdateModule } from "./VoiceStateUpdateModule.js";
 
@@ -14,10 +16,12 @@ export interface VoiceStateUpdateManagerOptions<
 > {
   client: TClient;
   voiceStateUpdatesPath: string;
+
   createContext: (
     oldState: VoiceState,
     newState: VoiceState,
   ) => MaybePromise<TContext>;
+
   onError?: (
     payload: FrameworkErrorPayload<
       VoiceStateUpdateModule<TContext>,
@@ -25,6 +29,7 @@ export interface VoiceStateUpdateManagerOptions<
       undefined
     >,
   ) => MaybePromise<void>;
+
   cacheBust?: boolean;
 }
 
