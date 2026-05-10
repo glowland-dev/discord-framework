@@ -3,7 +3,7 @@ import type { MaybePromise } from "../core/errors.js";
 import type { PermissionResolver } from "../core/permissions.js";
 
 export interface ButtonOptions<TContext> {
-  customId: string;
+  customId: string | RegExp;
   permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
   permissionResolver?: PermissionResolver<
     TContext,
@@ -16,7 +16,7 @@ export interface ButtonOptions<TContext> {
 }
 
 export class ButtonModule<TContext = unknown> {
-  readonly customId: string;
+  readonly customId: string | RegExp;
   readonly permissionsRequired?: (keyof typeof PermissionFlagsBits)[];
   readonly permissionResolver?: PermissionResolver<
     TContext,

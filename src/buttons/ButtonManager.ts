@@ -59,6 +59,7 @@ export class ButtonManager<
   private readonly errorReply_: InteractionReplyOptions | false;
   private readonly cacheBust_: boolean;
   private readonly buttonCache_ = new Map<string, ButtonModule<TContext>>();
+  private readonly regexButtons_: ButtonModule<TContext>[] = [];
 
   constructor(options: ButtonManagerOptions<TContext, TClient>) {
     this.client_ = options.client;
@@ -89,11 +90,16 @@ export class ButtonManager<
     });
 
     for (const button of buttons) {
-      if (this.buttonCache_.has(button.customId)) {
-        warnDuplicate("ButtonManager", button.customId);
+      if (typeof button.customId === "string") {
+        if (this.buttonCache_.has(button.customId)) {
+          warnDuplicate("ButtonManager", button.customId);
+        }
+
+        this.buttonCache_.set(button.customId, button);
+        continue;
       }
 
-      this.buttonCache_.set(button.customId, button);
+      this.regexButtons_.push(button);
     }
   }
 
@@ -101,7 +107,14 @@ export class ButtonManager<
     this.client_.on("interactionCreate", async (interaction) => {
       if (!interaction.isButton() || !interaction.inCachedGuild()) return;
 
-      const button = this.buttonCache_.get(interaction.customId);
+      const button =
+        this.buttonCache_.get(interaction.customId) ??
+        this.regexButtons_.find((button) => {
+          if (button.customId instanceof RegExp) {
+            return button.customId.test(interaction.customId);
+          }
+        });
+
       if (!button) return;
 
       let context: TContext | undefined;
